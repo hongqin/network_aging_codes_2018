@@ -1,0 +1,188 @@
+
+---
+title: "Bootstrap and fit mutants RLS with binomial aging model"
+author: "H Qin"
+date: "June 28 2017 - `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r}
+rm(list=ls())
+ setwd("~/github/bmc_netwk_aging_manuscript/R1/1.kaeberlein04plos")
+library('flexsurv')
+library('stringr')
+source("../lifespan.r")
+set.seed(20170701) #for repeatability
+RUNS = 100; #bootstrap runs
+
+list.files()
+```
+
+# parse the strains from files
+
+```{r}
+tb.ori = read.table("092304.merged.rls.csv", header = T, sep="\t")
+summary(tb.ori)
+```
+
+```{r}
+strains = names(tb.ori)
+strains
+```
+
+```{r}
+my.strains = c( "fig1b.BY4742",  "fig2b.sir2", "fig4b.by4742.SIR2.ox.2glucose",  
+                "fig1b.fob1","fig1b.hxk2","fig1b.fob1.hxk2"   )
+tb = tb.ori[, my.strains]
+```
+
+# Now, fit all RLS data 
+
+```{r, message=FALSE }
+for( BootstrapCount in 1:RUNS ) {#!!!!!!
+
+report = data.frame(my.strains)
+report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; #report$longfilename=NA; 
+
+for( i in 1:length(report[,1])){
+  my.data = tb[,i]
+  my.data = my.data[! is.na(my.data)]
+  report$samplesize[i] = length(my.data)
+  
+  #boostrap 
+  bt.data = sample(my.data, replace=TRUE); # BOOTSTRAP HERE
+
+  GompFlex = flexsurvreg(formula = Surv(bt.data) ~ 1, dist = 'gompertz')
+  WeibFlex = flexsurvreg(formula = Surv(bt.data) ~ 1, dist = 'weibull')
+
+  report$avgLS[i] =  mean(bt.data)
+  report$stdLS[i] =  sd(bt.data)
+  report$CV[i] = report$stdLS[i] / report$avgLS[i]
+
+  report$GompGFlex[i] = GompFlex$res[1,1]
+  report$GompRFlex[i] = GompFlex$res[2,1]
+  report$GompLogLikFlex[i] = round(GompFlex$loglik, 1)
+  report$GompAICFlex[i] = round(GompFlex$AIC)
+
+  report$WeibShapeFlex[i] = WeibFlex$res[1,1]
+  report$WeibRateFlex[i] = WeibFlex$res[2,1]
+  report$WeibLogLikFlex[i] = round(WeibFlex$loglik, 1)  
+  report$WeibAICFlex[i] = round(WeibFlex$AIC)
+
+  #set initial values
+  Rhat = report$GompRFlex[i]; # 'i' was missing. a bug costed HQ a whole afternoon.
+  Ghat = report$GompGFlex[i];
+  nhat = 6;  
+  t0= (nhat-1)/Ghat;
+  fitBinom = optim ( c(Rhat, t0, nhat),  llh.binomialMortality.single.run, 
+                     lifespan=bt.data, 
+                     #method='SANN') #SANN needs control  
+                     method="L-BFGS-B", 
+                     lower=c(1E-10, 1, 1), upper=c(1,200,20) );  
+  report[i, c("R", "t0", "n")] = fitBinom$par[1:3]
+  report$G[i] = (report$n[i] - 1)/report$t0[i]
+  report$BinomialAIC[i] = 2*3 + 2*fitBinom$value #20171003 AIC for 3-parameter binomial aging model
+
+}
+
+report$BestModel = 'NA';
+report$BestModel = ifelse((report$GompAICFlex < report$WeibAICFlex)&(report$GompAICFlex < report$BinomialAIC), "Gomp", report$BestModel)
+report$BestModel = ifelse((report$BinomialAIC < report$WeibAICFlex)&(report$BinomialAIC < report$GompAICFlex), "Binom", report$BestModel)
+report$BestModel = ifelse((report$WeibAICFlex < report$GompAICFlex)&(report$WeibAICFlex < report$BinomialAIC), "Weib", report$BestModel)
+report$BestModel = ifelse( (abs(report$BinomialAIC - report$GompAICFlex)<2 ) | ( abs(report$BinomialAIC-report$WeibAICFlex) <2 ), "bin<2", report$BestModel)
+
+outname = paste("bootstrap/", BootstrapCount, ".csv", sep='');  #has to be changed here !!!
+write.csv(report, file = outname, row.names = FALSE);
+}#end of boostrap loop
+
+```
+
+#summarize boostrap results. 
+Pick row-col value from every file into a buffer, then mean and stddev. 
+
+```{r}
+BootstrapMean = report; 
+BootstrapStd = report;
+rownames = names(report);
+for( col in 2:length(report[1,])) {
+  for ( row in 1:length(report[,1])) {
+    buffer = c();
+    for( BootstrapCount in 1:RUNS ) {
+      filename = paste("bootstrap/", BootstrapCount, ".csv", sep='');
+      tb = read.csv(filename)
+      if( rownames[col] == "BestModel" ) {
+        buffer = as.character( c(buffer, as.character(tb[row,col])) );
+      } else {
+        buffer = c(buffer, tb[row, col]); 
+      }
+    }
+    if( rownames[col] == "BestModel" ) {
+      tmp = table( buffer );
+      BootstrapMean[row,col] = paste(names(tmp), tmp, sep="=", collapse = ":");
+    } else {
+     BootstrapMean[row,col] = mean(buffer);
+     BootstrapStd[row,col] = sqrt(var(buffer));
+    }
+  }  
+}
+```
+
+Means 
+```{r}
+BootstrapMean
+```
+
+StdDev
+```{r}
+BootstrapStd
+```
+
+Merge the two tables
+```{r}
+BootstrapMean$Rstd = BootstrapStd$R
+BootstrapMean$t0std = BootstrapStd$t0
+BootstrapMean$nstd = BootstrapStd$n
+BootstrapMean$Gstd = BootstrapStd$G
+BootstrapMean$avgLSstd = BootstrapStd$avgLS
+BootstrapMean$GompRFlexStd = BootstrapStd$GompRFlex
+BootstrapMean$GompGFlexStd = BootstrapStd$GompGFlex
+names(BootstrapMean)
+```
+
+
+Reorganized the columns
+```{r}
+BootstrapMean = BootstrapMean[, c( "my.strains",  "samplesize",  "R", "Rstd",  "t0",  "t0std",  "n",  "nstd",   "G",  
+                                   "Gstd", "avgLS",  "avgLSstd", "stdLS",   "BestModel",  "CV",  
+                                    "GompRFlex", "GompRFlexStd", "GompGFlex",  "GompGFlexStd",
+                                   "GompLogLikFlex",   "WeibShapeFlex",  "WeibRateFlex", 
+                                   "WeibLogLikFlex",  "WeibAICFlex", "GompAICFlex", "BinomialAIC" 
+                                   )];
+BootstrapMean
+```
+
+Merge mean and std for publication
+```{r}
+BootstrapMeanPublishing = data.frame( BootstrapMean[, c("my.strains")] )
+BootstrapMeanPublishing$RwithStd = as.vector( paste(round(BootstrapMean$R, 4), round(BootstrapMean$Rstd,4), sep=" +/- ") );
+BootstrapMeanPublishing$t0withStd = as.vector( paste(round(BootstrapMean$t0, 1), round(BootstrapMean$t0std,1), sep=" +/- ") );
+BootstrapMeanPublishing$nwithStd = as.vector( paste(round(BootstrapMean$n, 1), round(BootstrapMean$nstd,3), sep=" +/- ") );
+BootstrapMeanPublishing$GwithStd = as.vector( paste(round(BootstrapMean$G, 2), round(BootstrapMean$Gstd,3), sep=" +/- ") );
+BootstrapMeanPublishing$GompRFlexwithStd = as.vector( paste(round(BootstrapMean$GompRFlex, 3), round(BootstrapMean$GompRFlexStd,3), sep=" +/- ") );
+BootstrapMeanPublishing$GompGFlexwithStd = as.vector( paste(round(BootstrapMean$GompGFlex, 2), round(BootstrapMean$GompGFlexStd,3), sep=" +/- ") );
+
+BootstrapMeanPublishing$avgLSwithStd = as.vector( paste(round(BootstrapMean$avgLS, 2), round(BootstrapMean$avgLSstd,3), sep=" +/- ") );
+
+BootstrapMeanPublishing
+```
+
+output
+```{r}
+write.csv(BootstrapMean, file='sandbox/_Kaberlein04_Bootstrap_summary.csv', row.names = FALSE)
+write.csv(BootstrapMeanPublishing, file='sandbox/_Kaberlein04_Bootstrap_summary_Publications.csv', row.names = FALSE)
+
+```
+
+

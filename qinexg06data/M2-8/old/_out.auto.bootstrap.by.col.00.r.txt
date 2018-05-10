@@ -1,0 +1,44 @@
+
+R : Copyright 2004, The R Foundation for Statistical Computing
+Version 1.9.0  (2004-04-12), ISBN 3-900051-00-3
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for a HTML browser interface to help.
+Type 'q()' to quit R.
+
+	UTF-8 locales are not currently supported
+
+> #040405Mon
+> 
+>  my.bootstrap <- function ( in.vector ) {
++    data <- in.vector[ ! is.na(in.vector) ]; 
++    boot.num <- ( length(data) %/% 10 ) * 10;
++    boot.out <- data.frame(matrix(ncol=boot.num, nrow=length(data) ));
++    for ( j in 1:boot.num ) {
++      data.tmp <- sample( data, size=length(data), replace=T);
++      data.tmp2 <- sort( data.tmp );
++      boot.out[ , j ] <- data.tmp2;
++    }
++    ret = boot.out;
++  }
+>  
+> ## the main section 
+> # rls <- read.table( "092104.naturals.rls.all.tab", sep="\t", header=T);
+>  rls <- read.table( "rls.tab", sep="\t", header=T);
+>  in.col.num = length( names(rls) );
+>  in.vector = unlist( rls );
+>  
+>  bootstrap = my.bootstrap( in.vector ); 
+> 
+>  write.table( bootstrap, "bootstrap.rls.tab", sep="\t", row.names=F, col.names=F);
+>  
+> #q("no")
+> 

@@ -1,0 +1,277 @@
+---
+title: "Dietary restriction effect on yeast lifespan"
+author: "e guven"
+date: "March, 2017"
+output: html_document
+---
+
+
+V2 moved from 9.Ken 
+02/13/2017
+
+_Survival Analysis Gomp Weib_20170227.R moved to -----> 
+DietaryRestriction_Effect_Genotype_20170227.R moved to "old" folder
+see old folder for _Survival Analysis Gomp Weib_20170227.R
+see new version 20170307 
+
+
+
+TODO for EG
+1) You need to calculate R and G for other gene mutant with YPD and 0.05D . There should several hundreds of these genes. (sod2 is just one of these genes).
+2) Pair-wise comparison of R and G between YPD and 0.05D.
+3) Project the changes of R and G between YPD and 0.05D onto the G~R 2D field plot to visualize the effect of Diretary restriction. 
+
+
+```{r}
+library('varhandle')
+library('flexsurv')
+library('stringr')
+library('ggplot2')
+```
+
+```{r}
+#load original data for analyzing
+
+new_rls<-read.csv("rls 2016-08-26.csv")
+
+
+my.data=new_rls
+
+#my.data<-my.data[complete.cases(my.data$ref_lifespan_mean),]
+
+# uniquely determine the ref_lifespans of each experiments individually
+big_data<-my.data[!duplicated(my.data$ref_lifespans),] #Qin: Inappropriate because several experimentals uses the same ref_lifespans!!
+
+```
+
+
+
+```{r}
+
+#big_data$ref_lifespan_mean<-unlist(ref_lifespan_mean)
+
+fit_names = c( 'genotype_in','popsize','genotype','media','mat','sd.ls','medianLS','Delta_LL','AvgLS','gompLogLik','gompRate','gompShape','weibLogLik','weibScale','weibShape')
+fit = data.frame(matrix(, nrow=length(fit_names), ncol=length(fit_names))) #set up a skeleton table
+names(fit) = c( "genotype_in","popsize","genotype","media","mat","sd.ls","medianLS","Delta_LL","AvgLS","gompLoglik","gompRate","gompShape","weibLogLik","weibScale","weibShape")
+
+
+lifespansChar_set<-big_data$set_lifespans
+lifespansChar_ref<-big_data$ref_lifespans
+
+#rgompertz = function(N,G, R){
+### I have a function to generate random-numbers from 
+### (using the 'inversion method')
+
+#  return( (log(1-(G/R*log(1-runif(N)))))/G)
+#}
+
+```
+
+
+```{r}
+lifespansTemp_list<-list()
+
+for (genotype_in in c(1:length(big_data$ref_name))){
+  
+  #genotype_in=94
+  
+  
+  lifespansChar_set1<-unfactor(lifespansChar_set[genotype_in])
+  #if lifespansChar_set1=="NA"
+  lifespansTemp_set =as.numeric(unlist(str_split(lifespansChar_set1, ",")))
+  
+  
+  lifespansChar_ref1<-unfactor(lifespansChar_ref[genotype_in])
+  lifespansTemp_ref =as.numeric(unlist(str_split(lifespansChar_ref1, ",")))
+  
+  lifespansTemp<-c(lifespansTemp_set,lifespansTemp_ref)  
+  
+  
+  if (any(is.na(lifespansTemp)))  next
+  
+  lifespansTemp[lifespansTemp < 0] <- 0
+  lifespansTemp <-floor(lifespansTemp+0.5)
+  lifespansTemp <- lifespansTemp[ lifespansTemp != 0 ]
+  
+  lifespansTemp_list[[length(lifespansTemp_list)+1]]<-lifespansTemp
+  
+  pop_size<-length(lifespansTemp)
+  
+  
+  lifespanGomp = flexsurvreg(formula = Surv(lifespansTemp) ~ 1, dist = 'gompertz') ### Use the flexsurvreg package to fit lifespan data to gompertz or weibull distribution
+  lifespanWeib = flexsurvreg(formula = Surv(lifespansTemp) ~ 1, dist = 'weibull')  
+  
+  ## Fill in added columns in the controlConditions table with data from gompertz and weibull ##fitting. Columns are named according to respective variables
+  media<-big_data$set_media
+  media=unfactor(media[genotype_in])
+  mat<-big_data$ref_mating_type
+  mat=unfactor(mat[genotype_in])
+  avgLS = mean(lifespansTemp)
+  StddevLS = sd(lifespansTemp)
+  medianLS = median(lifespansTemp)
+  gompShape = lifespanGomp$res[1,1]
+  gompRate = lifespanGomp$res[2,1]
+  gompLogLik = lifespanGomp$loglik
+  gompAIC = lifespanGomp$AIC
+  
+  weibShape = lifespanWeib$res[1,1]
+  weibScale = lifespanWeib$res[2,1]
+  weibLogLik = lifespanWeib$loglik
+  weibAIC = lifespanWeib$AIC   
+  
+  delta_LL = lifespanWeib$loglik- lifespanGomp$loglik
+  
+  genotype<-big_data$set_genotype
+  
+  genotype=unfactor(genotype[genotype_in])
+  
+  #fit_names = c( 'sd.ls','current.seed','i','medianLS','Delta_LL','AvgLS','gompLogLik','gompRat#e','gompShape','weibLogLik','weibScale','weibShape')
+  
+  fit = rbind(fit,c(genotype_in,pop_size,genotype,media,mat,StddevLS,medianLS,delta_LL,avgLS,gompLogLik,gompRate,gompShape,weibLogLik,weibScale,weibShape))
+  #names(fit)
+  
+  #fit= fit[!is.na(fit[,1]), ]
+  #cat("\n")
+  #cat(genotype_in)
+  
+}
+
+```
+
+```{r}
+
+new_fit<-fit[(length(fit_names)+1):length(fit[,1]),]
+new_fit<-new_fit[-c(1)]
+
+write.csv(new_fit,"Rls_fitting_emine_13022017.csv")
+
+
+###read the fitted data
+read_fit<-read.csv("Rls_fitting_emine_13022017.csv")
+
+
+data.YPD<-read_fit[read_fit$media=='YPD',]
+YPD.genotype.names<-unique(data.YPD$genotype)
+
+data.DR<-read_fit[read_fit$media=='0.05% D',]
+DR.genotype.names<-unique(data.DR$genotype)
+
+intersect.genotype<-intersect(YPD.genotype.names,DR.genotype.names)
+
+
+pairwise_names = c( 'genotype','DRpopsize','YPDpopsize','DRGompShape','YPDGompShape','DRGompRate','YPDGompRate')
+pairwise = data.frame(matrix(, nrow=length(pairwise_names), ncol=length(pairwise_names))) #set up a skeleton table
+names(pairwise) = c( "genotype","DRpopsize","YPDpopsize","DRGompShape","YPDGompShape","DRGompRate","YPDGompRate")
+
+
+
+###################
+#pick genotypes (specifically look into sod2) for
+####comparison between normal ("YPD") and DR(0.05% D) caloric restriction media
+
+for (intersect_in in intersect.genotype){
+  
+  DR.This.genotype<-data.DR[data.DR$genotype==intersect_in,]
+  #remove NA names at DR.This.genotype
+  DR.This.genotype<-DR.This.genotype[complete.cases(DR.This.genotype),]
+  
+  DR.This.popsize<-DR.This.genotype[DR.This.genotype$popsize==max(DR.This.genotype$popsize),]
+  #DR.This.popsize[complete.cases(DR.This.popsize),]
+  
+  DR.This.G<-DR.This.popsize$gompShape
+  DR.This.R<-DR.This.popsize$gompRate
+  
+  
+  YPD.This.genotype<-data.YPD[data.YPD$genotype==intersect_in,]
+  #remove NA names at YPD.This.genotype
+  YPD.This.genotype<-YPD.This.genotype[complete.cases(YPD.This.genotype),]
+  
+  YPD.This.popsize<-YPD.This.genotype[YPD.This.genotype$popsize==max(YPD.This.genotype$popsize),]
+  
+  YPD.This.G<-YPD.This.popsize$gompShape
+  YPD.This.R<-YPD.This.popsize$gompRate
+  
+  pairwise = rbind(pairwise,c(intersect_in,max(DR.This.genotype$popsize),max(YPD.This.genotype$popsize),
+                              DR.This.G,YPD.This.G,DR.This.R,YPD.This.R))
+  
+}
+
+```
+
+```{r}
+pairwise<-pairwise[(length(pairwise_names)+1):length(pairwise[,1]),]
+pairwise<-pairwise[complete.cases(pairwise),]
+
+
+
+test.G.DR <- as.numeric(pairwise$DRGompShape)
+test.G.YPD<-as.numeric(pairwise$YPDGompShape)
+
+test.R.DR <- as.numeric(pairwise$DRGompRate)
+test.R.YPD<-as.numeric(pairwise$YPDGompRate)
+
+
+
+
+
+
+pairwise.results <- data.frame(data=c(test.G.DR,test.G.YPD,test.R.DR,test.R.YPD),
+                               key=c(
+                                 rep("test.G.DR", length(test.G.DR)),
+                                 rep("test.G.YPD", length(test.G.YPD)),
+                                 rep("test.R.DR", length(test.R.YPD)),
+                                 rep("test.R.YPD", length(test.R.YPD))) )
+
+t.test<-pairwise.t.test(pairwise.results$data,
+                        pairwise.results$key,
+                        pool.sd=FALSE)
+
+t.test
+
+```
+#t-test and scatter plot of DR~YPD of G-shape parameter
+```{r}
+G.DR = test.G.DR
+G.YPD= test.G.YPD
+
+G_list = list(G.DR, G.YPD)
+G_df = do.call("rbind", lapply(G_list, 
+                               function(x) data.frame(shape = x, 
+                                                      genotypes = seq_along(x))))
+ID_options = c("G.DR","G.YPD")
+G_df$ID = rep(ID_options, sapply(G_list, length))
+
+#ggsave( "plots/ScatterPlot_DRvsYPD_shapeParameter.pdf",width=7,height=5,sep=''))
+G.plot<-ggplot(G_df, aes(x = shape, y = genotypes, color = ID)) + geom_point()+annotate("text", x = 0.03, y = 220, label = "p-value=0.55")
+G.plot
+#ggsave( G.plot,file="plots/ScatterPlot_DRvsYPD_shapeParameter.pdf")
+#dev.off
+```
+
+#t-test and scatter plot of DR~YPD of R-scale parameter
+```{r}
+
+R.DR = test.R.DR
+R.YPD= test.R.YPD
+
+R_list = list(R.DR, R.YPD)
+R_df = do.call("rbind", lapply(R_list, 
+                               function(x) data.frame(scale = x, 
+                                                      genotypes = seq_along(x))))
+ID_options = c("R.DR","R.YPD")
+R_df$ID = rep(ID_options, sapply(R_list, length))
+
+#pdf(paste("plots/", "ScatterPlot_DRvsYPD_scaleParameter.pdf", width=7,height=5,sep=''))
+R.plot<-ggplot(R_df, aes(x = scale, y = genotypes, color = ID)) + geom_point()+annotate("text", x = 0.07, y = 220, label = "p-value=0.30")
+R.plot
+#ggsave( R.plot,file="plots/ScatterPlot_DRvsYPD_scaleParameter.pdf")
+#dev.off
+
+```
+
+
+
+
+
+
+

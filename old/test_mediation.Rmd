@@ -1,0 +1,42 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# mediation library test
+```{r}
+library("mediation")
+set.seed(2014)
+data("framing", package="mediation")
+str(framing)
+head(framing)
+```
+
+# The mediation model versus the outcome model. 
+
+```{r}
+#mediation model
+med.fit = lm(emo ~ treat + age + educ + gender + income, data=framing)  
+summary(med.fit)
+```
+
+```{r}
+#outcome model
+out.fit <- glm(cong_mesg ~ emo + treat + age + educ + gender + income,data = framing, family = binomial("probit"))
+summary(out.fit)
+```
+
+
+```{r}
+med.out <- mediate(med.fit, out.fit, treat = "treat", mediator = "emo", robustSE = TRUE, sims = 100)
+summary(med.out)
+```
+
+In this example, the estimated ACMEs are statistically
+significantly different from zero but the estimated average direct and total effects are not. The
+results suggest that the treatment in the framing experiment may have increased emotional
+response, which in turn made subjects more likely to send a message to his or her member of
+Congress. Here, since the outcome is binary all estimated effects are expressed as the increase
+in probability that the subject sent a message to his or her Congress person.
+

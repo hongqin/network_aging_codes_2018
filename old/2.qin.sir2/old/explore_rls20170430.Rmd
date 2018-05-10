@@ -1,0 +1,118 @@
+---
+title: "Explor RLS using Qin's rls.csv"
+author: "h qin"
+date: "May 1, 2017"
+output: html_document
+---
+
+It seems that oritinal "rls 20160802.csv"" misses many set_lifespan reports. 
+I exported rls.csv form rls-20160302.db using sqlite3. I want to see whether this can fixed the missing entries in the original rls.csv. 
+No. My exported rls.csv also have many missing entries. So, this is a error in rls-20160802.db. 
+
+
+```{r}
+rm(list=ls())
+library('varhandle')
+library('flexsurv')
+library('stringr')
+library('ggplot2')
+```
+
+```{r}
+setwd("/Users/hqin/github/bmc_netwk_aging_manuscript/R1/1.mutants");
+rls<-read.csv("rls_20150104.csv")
+#rls<-read.csv("rls_20160802-qin.csv") #missing entries are still there
+#str(rls)
+#my.colClasses = c("int","int", rep("chr",7), rep(NA,5), rep("chr",8),rep(NA,5), "chr", rep(NA,3), "chr" ); 
+#cbind( names(rls), my.colClasses)
+#rls2<-read.csv("rls_small.csv", colClasses= my.colClasses);
+```
+
+
+```{r}
+rls$set_name = as.character(rls$set_name)
+rls$set_strain= as.character(rls$set_strain)
+rls$set_background= as.character(rls$set_background)
+rls$set_mating_type= as.character(rls$set_mating_type)
+rls$set_genotype= as.character(rls$set_genotype)
+rls$set_media= as.character(rls$set_media)
+rls$set_lifespans= as.character(rls$set_lifespans)
+
+rls$ref_name = as.character(rls$ref_name)
+rls$ref_strain= as.character(rls$ref_strain)
+rls$ref_background= as.character(rls$ref_background)
+rls$ref_mating_type= as.character(rls$ref_mating_type)
+rls$ref_genotype= as.character(rls$ref_genotype)
+rls$ref_media= as.character(rls$ref_media)
+rls$ref_lifespans= as.character(rls$ref_lifespans)
+
+str(rls)
+```
+
+Many rows do not provide lifespan? 
+```{r}
+rls.b= rls[ !rls$set_lifespans == '', ] #50383 entries
+rls = rls.b
+x = table(rls$set_lifespans)
+#x[x>1]
+```
+
+Correct some errors
+```{r}
+#table(rls$set_background)
+rls$set_background[rls$set_background== 'BY4,742'] = 'BY4742'
+table(rls$set_background)
+```
+
+
+```{r}
+genotypes = unique(c(rls$set_genotype, rls$ref_genotype));
+genotypes[1:10]
+```
+
+
+```{r}
+for( i in 1:length(rls[,1])) { 
+ elements = unlist( strsplit(  rls$set_genotype[i], '\\s+',))
+ rls$set_genotype_elements[i]= length( elements )
+}
+```
+
+```{r}
+summary(rls$set_genotype_elements)
+cbind(rls$set_genotype, rls$set_genotype_elements)[500:510,]
+```
+
+select YPD 30C MATalpha, pooled_by ='strain'
+```{r}
+#conditions = conditions[ conditions$media=='YPD' & conditions$temp==30 & conditions$mat=='MATalpha', ]
+rlsYPD = rls[ rls$set_media=='YPD' & rls$set_temperature=='30' & rls$set_mating_type=='MATalpha' 
+            & rls$set_background=='BY4742'  & rls$pooled_by == 'file',            ]
+```
+
+
+Find tor1
+```{r}
+unique( rlsYPD$set_genotype[grep('tor1', rlsYPD$set_genotype)] )
+```
+
+```{r}
+rlsYPD.tor1 =  rlsYPD[rlsYPD$set_genotype=='tor1', ] 
+apply(rlsYPD.tor1[, c("set_lifespan_start_count", "set_lifespan_count")], 2, sum)
+```
+
+Check the media
+```{r}
+unique( rls$set_media[grep("%", rls$set_media )])[1:10]
+```
+
+Pick 0.05%D YPD for BY472
+```{r}
+rls005D = rls[ rls$set_media=='0.05% D' & rls$set_temperature=='30' & rls$set_mating_type=='MATalpha' 
+            & rls$set_background=='BY4742'  & rls$pooled_by == 'file',            ]
+unique(rls005D$set_genotype[rls005D$set_genotype_elements==1] )
+```
+
+
+
+

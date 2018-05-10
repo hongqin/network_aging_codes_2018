@@ -1,0 +1,27 @@
+
+nat <- read.table("nat.rls.tab", header=T);
+lab <- read.table("lab.rls.tab", header=T);
+
+isolates = as.character( nat$strain );
+strains  = as.character( lab$strain );
+
+ylim = c( (min(log(nat$a)) - 0.5 ), (max(log(nat$a)) + 0.5 ) )
+xlim = c( min(nat$b)*0.9, max(nat$b)*1.05 )
+
+
+#for text labels
+y = log(nat$a) - 0.1;	x = nat$b;
+
+plot( log(nat$a) ~ nat$b ,  col="black",  xlab="G",ylab="lnR0", pch= 19, ylim= ylim, xlim=xlim );
+text( x, y, isolates, cex=0.8 ); 
+
+#plot( log(nat$a) ~ nat$b);
+m = lm( log(nat$a) ~ nat$b);
+abline(m, col="red");
+ 
+text( 0.14, -4.5, "R^2=0.37 p=0.02" );
+
+
+#dev.off();
+
+ 

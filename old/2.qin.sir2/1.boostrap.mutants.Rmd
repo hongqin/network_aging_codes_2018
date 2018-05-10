@@ -1,0 +1,193 @@
+---
+title: "Bootstrap and fit mutants RLS with binomial aging model"
+author: "H Qin"
+date: "May 4 2017 - `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+rm(list=ls())
+host = "Applejack" #"Ridgeside"
+if (host == "AppleJack") {
+ setwd("/Users/hqin/github/bmc_netwk_aging_manuscript/R1/1.mutants")
+}
+if (host == "Ridgeside") {
+ setwd("/hong/hqin/github/bmc_netwk_aging_manuscript/R1/1.mutants")
+}
+
+library('flexsurv')
+library('stringr')
+source("../lifespan.r")
+```
+
+# parse the strains from files
+
+```{r}
+set.seed(20170701) #for repeatability
+
+RUNS = 100; #bootstrap runs
+
+mydir = 'rls.qin'   # Qin lab rls
+files = list.files(path=paste(mydir,"/", sep=''), pattern="csv")
+
+genotypes = c();
+media = c();
+for( i in 1:length(files)) {
+ elements = unlist(str_split(files[i], "_"))
+ genotypes = c(genotypes, elements[1])  
+ media = c(media, elements[length(elements)])
+}
+genotypes = unique(genotypes)
+genotypes
+#media
+```
+
+
+# Now, fit all RLS data 
+
+```{r, message=FALSE }
+for( BootstrapCount in 1:RUNS ) {#!!!!!!
+
+report = data.frame(files)
+report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; #report$longfilename=NA; 
+
+for( i in 1:length(report[,1])){
+#for( i in 3:4){
+  tb = read.csv( paste(mydir,"/",files[i] ,sep=''), sep="\t")
+  #tb = read.table( paste("../qinlab_rls/",my.files[1],sep=''), sep="\t")
+  report$samplesize[i] = length(tb[,1])
+
+  #boostrap 
+  tb[,1] = sample(tb[,1], replace=TRUE); # BOOTSTRAP HERE
+
+  GompFlex = flexsurvreg(formula = Surv(tb[,1]) ~ 1, dist = 'gompertz')
+  WeibFlex = flexsurvreg(formula = Surv(tb[,1]) ~ 1, dist = 'weibull')
+
+  report$avgLS[i] =  mean(tb[,1])
+  report$stdLS[i] =  sd(tb[,1])
+  report$CV[i] = report$stdLS[i] / report$avgLS[i]
+
+  report$GompGFlex[i] = GompFlex$res[1,1]
+  report$GompRFlex[i] = GompFlex$res[2,1]
+  report$GompLogLikFlex[i] = round(GompFlex$loglik, 1)
+  report$GompAICFlex[i] = round(GompFlex$AIC)
+
+  report$WeibShapeFlex[i] = WeibFlex$res[1,1]
+  report$WeibRateFlex[i] = WeibFlex$res[2,1]
+  report$WeibLogLikFlex[i] = round(WeibFlex$loglik, 1)  
+  report$WeibAICFlex[i] = round(WeibFlex$AIC)
+
+  #set initial values
+  Rhat = report$GompRFlex[i]; # 'i' was missing. a bug costed HQ a whole afternoon.
+  Ghat = report$GompGFlex[i];
+  nhat = 6;  
+  t0= (nhat-1)/Ghat;
+  fitBinom = optim ( c(Rhat, t0, nhat),  llh.binomialMortality.single.run, 
+                     lifespan=tb[,1], 
+                     #method='SANN') #SANN needs control  
+                     method="L-BFGS-B", 
+                     lower=c(1E-10, 1, 1), upper=c(1,200,20) );  
+  report[i, c("R", "t0", "n")] = fitBinom$par[1:3]
+  report$G[i] = (report$n[i] - 1)/report$t0[i]
+}
+
+report$BestModel = ifelse(report$GompAICFlex < report$WeibAICFlex, "Gomp", "Weib")
+report$BestModel = ifelse(abs(report$GompAICFlex - report$WeibAICFlex)<2, "<2", report$BestModel)
+
+outname = paste("bootstrap/", BootstrapCount, ".csv", sep='');  #has to be changed here !!!
+write.csv(report, file = outname, row.names = FALSE);
+}#end of boostrap loop
+
+```
+
+ 
+ #summarize boostrap results. 
+Pick row-col value from every file into a buffer, then mean and stddev. 
+
+```{r}
+BootstrapMean = report; 
+BootstrapStd = report;
+rownames = names(report);
+for( col in 2:length(report[1,])) {
+  for ( row in 1:length(report[,1])) {
+    buffer = c();
+    for( BootstrapCount in 1:RUNS ) {
+      filename = paste("bootstrap/", BootstrapCount, ".csv", sep='');
+      tb = read.csv(filename)
+      if( rownames[col] == "BestModel" ) {
+        buffer = as.character( c(buffer, as.character(tb[row,col])) );
+      } else {
+        buffer = c(buffer, tb[row, col]); 
+      }
+    }
+    if( rownames[col] == "BestModel" ) {
+      tmp = table( buffer );
+      BootstrapMean[row,col] = paste(names(tmp), tmp, sep="=", collapse = ":");
+    } else {
+     BootstrapMean[row,col] = mean(buffer);
+     BootstrapStd[row,col] = sqrt(var(buffer));
+    }
+  }  
+}
+```
+
+Means 
+```{r}
+BootstrapMean
+```
+
+StdDev
+```{r}
+BootstrapStd
+```
+
+Merge the two tables
+```{r}
+BootstrapMean$Rstd = BootstrapStd$R
+BootstrapMean$t0std = BootstrapStd$t0
+BootstrapMean$nstd = BootstrapStd$n
+BootstrapMean$Gstd = BootstrapStd$G
+BootstrapMean$avgLSstd = BootstrapStd$avgLS
+BootstrapMean$GompRFlexStd = BootstrapStd$GompRFlex
+BootstrapMean$GompGFlexStd = BootstrapStd$GompGFlex
+names(BootstrapMean)
+```
+
+
+Reorganized the columns
+```{r}
+BootstrapMean = BootstrapMean[, c( "files",  "samplesize",  "R", "Rstd",  "t0",  "t0std",  "n",  "nstd",   "G",  
+                                   "Gstd", "avgLS",  "avgLSstd", "stdLS",   "BestModel",  "CV",  
+                                    "GompRFlex", "GompRFlexStd", "GompGFlex",  "GompGFlexStd",
+                                   "GompLogLikFlex",  "GompAICFlex",  "WeibShapeFlex",  "WeibRateFlex", 
+                                   "WeibLogLikFlex",  "WeibAICFlex"  )];
+BootstrapMean
+```
+
+Merge mean and std for publication
+```{r}
+BootstrapMeanPublishing = data.frame( BootstrapMean[, c("files")] )
+BootstrapMeanPublishing$RwithStd = as.vector( paste(round(BootstrapMean$R, 4), round(BootstrapMean$Rstd,4), sep=" +/- ") );
+BootstrapMeanPublishing$t0withStd = as.vector( paste(round(BootstrapMean$t0, 1), round(BootstrapMean$t0std,1), sep=" +/- ") );
+BootstrapMeanPublishing$nwithStd = as.vector( paste(round(BootstrapMean$n, 1), round(BootstrapMean$nstd,3), sep=" +/- ") );
+BootstrapMeanPublishing$GwithStd = as.vector( paste(round(BootstrapMean$G, 2), round(BootstrapMean$Gstd,3), sep=" +/- ") );
+BootstrapMeanPublishing$GompRFlexwithStd = as.vector( paste(round(BootstrapMean$GompRFlex, 3), round(BootstrapMean$GompRFlexStd,3), sep=" +/- ") );
+BootstrapMeanPublishing$GompGFlexwithStd = as.vector( paste(round(BootstrapMean$GompGFlex, 2), round(BootstrapMean$GompGFlexStd,3), sep=" +/- ") );
+
+BootstrapMeanPublishing$avgLSwithStd = as.vector( paste(round(BootstrapMean$avgLS, 2), round(BootstrapMean$avgLSstd,3), sep=" +/- ") );
+
+BootstrapMeanPublishing
+```
+
+output
+```{r}
+write.csv(BootstrapMean, file=paste('sandbox/', mydir, '_Bootstrap_summary.csv', sep=''), row.names = FALSE)
+write.csv(BootstrapMeanPublishing, file=paste('sandbox/', mydir, '_Bootstrap_summary_Publications.csv', sep=''), row.names = FALSE)
+
+```
+
+# How can t0 and R both increases in pooled data set? What does this mean for p, and lambda? 
+# Do pooled data contain heterogenous noises? 
+

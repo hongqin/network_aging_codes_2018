@@ -1,0 +1,353 @@
+---
+title: "0.fit_qinlabrls.Rmd"
+author: "h qin"
+date: "June 9, July 6-11, 2016"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+20170424. Major bug found. file names and strains names are inconsistent. 
+
+20160711-> Fitting RLS dataset merged by strains. 
+
+20160706-0711. Finished batch fitting of all individual RLS data sets. The fitting results showed that 'n' are often in the range of [5,7], though it is very noisy. 
+
+
+```{r}
+rm(list=ls())
+#setwd("~/github/0.network.aging.prj.bmc/0a.rls.fitting")
+setwd("~/github/bmc_netwk_aging_manuscript/R1/0.nat.rls.fitting")
+library('flexsurv')
+source("../lifespan.r")
+```
+
+# Parse  strains from files
+
+```{r}
+set.seed(20170101)
+files = list.files(path="../qinlab_rls/", pattern="rls.tab")
+tmp1 = gsub("\\d{6}.", "", files)
+redundant_strains = gsub(".rls.tab", "", tmp1)
+strains = sort( unique( redundant_strains ))
+strains
+```
+
+Take files from natural isolates
+```{r}
+my.strains=c("101S", "M1-2","M13","M14","M2-8","M22","M32","M34","M5","M8","RM112N","S288c","SGU57", "YPS128","YPS163")
+files2=c();
+for( i in 1:length(my.strains)){
+ files2 = c( files2, files[grep(my.strains[i], files)]);
+}
+
+report = data.frame(cbind(my.strains))
+report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; report$longfilename=NA; 
+
+files = files2; 
+strains = my.strains; 
+```
+
+# Explore the fitting outcomes of 'flexsurv'. 
+
+```{r}
+i=2
+  tb = read.table( paste("../qinlab_rls/",files[i],sep=''), sep="\t")
+  GompFlex = flexsurvreg(formula = Surv(tb[,1]) ~ 1, dist = 'gompertz')
+  WeibFlex = flexsurvreg(formula = Surv(tb[,1]) ~ 1, dist = 'weibull')
+#str(GompFlex)
+GompFlex$res
+GompFlex$res.t
+GompFlex$opt$hessian
+#str(WeibFlex)
+```
+
+# Now, fit all RLS data sets by strains
+
+```{r, message=FALSE }
+for( i in 1:length(report[,1])){
+#for( i in 3:4){
+  my.files = files[grep(strains[i], files)]
+  report$longfilename[i] = paste(my.files, collapse = "::");
+  tb = read.table( paste("../qinlab_rls/",my.files[1],sep=''), sep="\t")
+  if( length(my.files)> 1){
+    for( fi in 2:length(my.files)) {
+      tmp.tb = read.table( paste("../qinlab_rls/",my.files[fi],sep=''), sep="\t")
+      tb = rbind( tb, tmp.tb)
+    }
+  }
+  report$samplesize[i] = length(tb[,1])
+
+  GompFlex = flexsurvreg(formula = Surv(tb[,1]) ~ 1, dist = 'gompertz')
+  WeibFlex = flexsurvreg(formula = Surv(tb[,1]) ~ 1, dist = 'weibull')
+
+  report$avgLS[i] =  mean(tb[,1])
+  report$stdLS[i] =  sd(tb[,1])
+  report$CV[i] = report$stdLS[i] / report$avgLS[i]
+
+  report$GompGFlex[i] = GompFlex$res[1,1]
+  report$GompRFlex[i] = GompFlex$res[2,1]
+  report$GompLogLikFlex[i] = round(GompFlex$loglik, 1)
+  report$GompAICFlex[i] = round(GompFlex$AIC)
+
+  report$WeibShapeFlex[i] = WeibFlex$res[1,1]
+  report$WeibRateFlex[i] = WeibFlex$res[2,1]
+  report$WeibLogLikFlex[i] = round(WeibFlex$loglik, 1)  
+  report$WeibAICFlex[i] = round(WeibFlex$AIC)
+
+  #set initial values
+  Rhat = report$GompRFlex[i]; # 'i' was missing. a bug costed HQ a whole afternoon.
+  Ghat = report$GompGFlex[i];
+  nhat = 6;  
+  t0= (nhat-1)/Ghat;
+  fitBinom = optim ( c(Rhat, t0, nhat),  llh.binomialMortality.single.run, 
+                     lifespan=tb[,1], 
+                     #method='SANN') #SANN needs control  
+                     method="L-BFGS-B", 
+                     lower=c(1E-3, 1, 2), upper=c(0.1,200,10) );  
+  report[i, c("R", "t0", "n")] = fitBinom$par[1:3]
+  report$G[i] = (report$n[i] - 1)/report$t0[i]
+}
+```
+
+Show the results
+```{r}
+#report[ grep("tBY", report$strains), ]
+report
+summary(report[, c("avgLS", "t0", "n")])
+```
+
+#Overlay the binomial aging model with observation. 
+see  http://hongqinlab.blogspot.com/2013/12/binomial-mortailty-model.html
+ m = R ( 1 + t/t0)^(n-1)
+ s = exp( (R t0/n)*(1 - (1+t/t0)^n ) )  
+
+```{r, message=FALSE }
+for( i in 1:length(report[,1])){
+#for( i in 3:4){
+  my.files = files[grep(strains[i], files)]
+  report$longfilename[i] = paste(my.files, collapse = "::");
+  tb = read.table( paste("../qinlab_rls/",my.files[1],sep=''), sep="\t")
+  if( length(my.files)> 1){
+    for( fi in 2:length(my.files)) {
+      tmp.tb = read.table( paste("../qinlab_rls/",my.files[fi],sep=''), sep="\t")
+      tb = rbind( tb, tmp.tb)
+    }
+  }
+  
+  ret = calculate.s(tb[,1])
+  plot( ret$s ~ ret$t, main=strains[i]);
+  print (report[i,  ]);
+  print (report[i, c("R", "t0", "n", "G")] );
+  t = seq(0,max(ret$t*1.1));
+  # s = exp( (R t0/n)*(1 - (1+t/t0)^n ) )  
+  s = exp( (report$R[i]* report$t0[i]/report$n[i])*(1 - (1+t/report$t0[i])^report$n[i] ) ) ; 
+  lines(s ~ t, col='red')
+}
+
+```
+
+Calculate lambda based on t0 = (1-p)/(p Lambda)
+So, 1/lambda = t0 * p / (1-p)
+
+```{r}
+p = 0.7
+report$One.over.lambdaP07 = report$t0 * p/ (1-p)
+report[, c("t0", "One.over.lambdaP07")]
+summary( report[, c("t0", "One.over.lambdaP07")])
+
+```
+
+Histogram of 1/lambda for p=0.7
+```{r}
+hist(report$One.over.lambdaP07, br=20, xlim=c(60,190), xlab=expression(paste("1/",lambda) ), main=expression(paste("Histogram of 1/",lambda, " when p=0.7")))
+```
+
+```{r}
+p = 0.9
+report$One.over.lambdaP09 = report$t0 * p/ (1-p)
+report[, c("t0", "One.over.lambdaP09")]
+summary( report[, c("t0", "One.over.lambdaP09")] )
+```
+
+Histogram 1/lambda, p=0.9
+```{r}
+hist(report$One.over.lambdaP09, br=20, xlim=c(200,800), xlab=expression(paste("1/",lambda) ), main=expression(paste("Histogram of 1/",lambda, " when p=0.9")))
+```
+
+
+
+
+# Explorative analysis 
+
+```{r}
+# my.strains=c("101S", "BY4743","M1-2","M13","M14","M2-8","M22","M32","M34","M5","M8","RM112N","S288c","SGU57","SK1","W303","YPS128","YPS163")
+
+#my.strains=c("101S", "M1-2","M13","M14","M2-8","M22","M32","M34","M5","M8","RM112N","S288c","SGU57", "YPS128","YPS163")
+report2 = report
+summary(lm(log10(report2$GompRFlex) ~ report2$GompGFlex))
+summary(lm(log10(report2$R) ~ report2$GompGFlex))
+summary(lm(log10(report2$R) ~ report2$G)) #G from t0 and n 
+summary(lm(report2$GompGFlex ~ report2$G)) #good agreement bwteen GFlex and G from binomial modeling
+
+summary(lm(log10(report2$R) ~ report2$t0)) #G from t0 and n 
+summary(lm(log10(report2$R) ~ report2$n)) #G from t0 and n 
+
+```
+
+# Strehler-Mildvan correlation in natural isolates
+```{r}
+plot( log10(report2$R) ~ report2$G, pch=19, col='red', xlab='G', ylab='log10(R)', 
+      xlim=c(0.07, 0.22), ylim=c(-2.9, -2.1),
+      main="Strehler-Mildvan correlation in yeast wild isolates")
+m = lm(log10(report2$R) ~ report2$G)
+abline (m, col='black', lty=2);
+text(0.18, -2.2, "Rsquared=0.39 p=0.01")
+
+my.x = report2$G +0.0013 ; my.y = log10(report2$R) ; 
+names(my.x) = report2$my.strains; names(my.y) = report2$my.strains; 
+my.y[c("YPS163", "M1-2" )]=c(-2.8, -2.63)
+text(my.x,my.y, report2$my.strains, adj=c(0,0) )
+
+
+summary(lm(log10(report2$R) ~ report2$G)) #G from t0 and n 
+
+summary(lm(log10(report2$GompRFlex) ~ report2$GompGFlex)) #G from t0 and n 
+
+```
+
+
+# plot log10(R) ~ t0
+
+```{r}
+plot( log10(report2$R) ~ report2$t0, col='red',  pch=19, xlab='t0', ylab='log10(RFlex)', ylim=c(-3,-2))
+my.x = report2$t0; my.y = log10(report2$R) + 0.04; 
+names(my.x) = report2$my.strains; names(my.y) = report2$my.strains; 
+my.y[c("M32","YPS163", "YPS128", "M1-2" )]=c(-2.75, -2.8, -2.75, -2.63)
+text(my.x,my.y, report2$my.strains )
+m = lm(  log10(report2$R) ~ report2$t0  )
+abline (m, col='black', lty=2);
+text( 60, -2.8, "R^2=0.44, p=0.007")
+summary(m)
+```
+
+# plot log10(GompRFlex) ~ t0
+
+```{r}
+plot( log10(report2$GompRFlex) ~ report2$t0, col='red',  pch=19, xlab='t0', ylab='log10(Rflex)', ylim=c(-3.5,-2))
+my.x = report2$t0; my.y = log10(report2$GompRFlex) + 0.04; 
+names(my.x) = report2$my.strains; names(my.y) = report2$my.strains; 
+my.y[c("M32","YPS163", "YPS128", "M1-2" )]=c(-2.75, -2.8, -2.75, -2.63)
+text(my.x,my.y, report2$my.strains )
+m = lm(  log10(report2$GompRFlex) ~ report2$t0  )
+abline (m, col='black', lty=2);
+text( 60, -2.8, "R^2=0.36, p=0.019")
+summary(m)
+```
+
+
+# Could t0 be the cause of logR-G correlation? 
+Partial regression on G ~  log(R)  + t0. 
+
+```{r}
+ summary(lm( log10(report2$GompRFlex) ~ report2$t0 + report2$GompGFlex  )) #poor
+ summary(lm( log10(report2$GompGFlex) ~ report2$t0 + report2$GompRFlex  ))#good
+#summary(lm( report2$G ~ log10(report2$R) + report2$t0  ))
+#summary(lm( report2$G ~ report2$t0 + log10(report2$R)   ))
+summary(lm( report2$GompGFlex ~ report2$t0 + log10(report2$R)   )) 
+summary(lm( report2$GompGFlex ~ report2$t0 + log10(report2$GompRFlex)   )) 
+
+```
+
+
+# Mediation test on Gflex <--t0 <-- RFlex
+Hong thinks this gives positive result. 
+```{r}
+library(mediation)
+set.seed(20170801)
+report2$log10GompRFlex = log10(report2$GompRFlex)
+med.fit = lm(t0 ~ log10GompRFlex, data=report2)  
+summary(med.fit)
+out.fit = lm(GompGFlex ~ t0 + log10GompRFlex, data=report2)  
+summary(out.fit)
+med.out <- mediate(med.fit, out.fit, treat = "log10GompRFlex", mediator = "t0", robustSE = TRUE, sims = 100)
+summary(med.out)
+
+```
+
+# Mediation test 2 on Rflex <--t0 <-- GFlex
+Hong thinks this is negative result. 
+```{r}
+med.fit = lm(t0 ~ GompGFlex, data=report2)  
+summary(med.fit)
+out.fit = lm(log10GompRFlex ~ t0 + GompGFlex, data=report2)  
+summary(out.fit)
+med.out <- mediate(med.fit, out.fit, treat = "GompGFlex", mediator = "t0", robustSE = TRUE, sims = 100)
+summary(med.out)
+
+
+```
+
+# Plot initial virtula life ~ n (average interactions)
+
+```{r}
+plot( report2$t0 ~ report2$n, col='red', xlim=c(5.5, 9), ylim=c(25, 80), pch=19, xlab='n', ylab='t0')
+my.x = report2$n + 0.1; my.y = report2$t0 + 2; 
+names(my.x) = report2$my.strains; names(my.y) = report2$my.strains; 
+my.y[c("M14","SGU57", "M32","M13" )]=c(52, 52, 33, 38)
+text(my.x,my.y, report2$my.strains )
+text(6, 70, "p=0.60")
+summary(lm(log10(report2$t0) ~ report2$n)) #G from t0 and n 
+
+```
+
+Gompert versus Weibull?
+AIC: smaller is better (for information loss)
+```{r}
+report$BestModel = ifelse(report$GompAICFlex < report$WeibAICFlex, "Gomp", "Weib")
+report$BestModel = ifelse(abs(report$GompAICFlex - report$WeibAICFlex)<2, "<2", report$BestModel)
+```
+
+
+CV ~ Gomp and Weibull? How does noises influence likelihood of Gompertz and Weibull fitting? 
+```{r}
+summary(lm(report$CV ~ report$BestModel ))
+summary(lm(report$CV ~ report$WeibLogLikFlex ))
+summary(lm(report$CV ~ report$GompLogLikFlex  ))
+summary(lm(report$CV ~ (report$GompLogLikFlex - report$WeibLogLikFlex)))
+plot( report$GompLogLikFlex ~ report$CV, col="red", pch=3, xlim=c(0, 0.8), ylim=c(-220, -80))
+points( report$CV, report$WeibLogLikFlex, col="blue", pch=4)
+m1 = lm( report$GompLogLikFlex ~ report$CV)
+m2 = lm( report$WeibLogLikFlex ~ report$CV)
+abline( m1, col="red", lty=2)
+abline( m2, col='blue', lty=1)
+text(0.6, -210, "nearly the same!?")
+```
+
+The QIN-RLS data suggested that noisy system signal perfer Gompertz model, based on GG01 theory. 
+Notice that CV measures distrubition of system signals and are different from white noises (residues)
+
+```{r}
+report$DeltaGompWeiLLH = report$GompLogLikFlex - report$WeibLogLikFlex
+plot( report$DeltaGompWeiLLH ~ report$CV )
+m3 = lm( report$DeltaGompWeiLLH ~ report$CV)
+abline(m3, col='red')
+```
+
+
+TODO: Calculate the white noises (fitting errors) using the fitting residues for Gompertz and Weibull models. 
+
+```{r}
+# report$residues ?? 
+
+```
+
+Output
+```{r}
+#write.csv(report2, file = 'sandbox/_report_qinlab_natural_isolates_rls.csv', row.names = FALSE)
+
+```
+
+
+
+
