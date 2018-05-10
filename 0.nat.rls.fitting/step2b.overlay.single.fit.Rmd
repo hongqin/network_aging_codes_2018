@@ -22,7 +22,7 @@ It seems FlexSurv used the loglikehood value from optim(). When I switch to opti
 ```{r}
 rm(list=ls())
 #setwd("~/github/0.network.aging.prj.bmc/0a.rls.fitting")
-setwd("~/github/bmc_netwk_aging_manuscript/R1/0.nat.rls.fitting")
+#setwd("~/github/bmc_netwk_aging_manuscript/R1/0.nat.rls.fitting")
 library('flexsurv')
 source("../lifespan.r")
 ```

@@ -15,7 +15,7 @@ It seems FlexSurv used the loglikehood value from optim(). When I switch to opti
 
 ```{r}
 rm(list=ls())
-setwd("~/github/bmc_netwk_aging_manuscript/R1/0.nat.rls.fitting");
+#setwd("~/github/bmc_netwk_aging_manuscript/R1/0.nat.rls.fitting");
 
 #host = "Applejack" #"Ridgeside"
 #if (host == "AppleJack") {
@@ -38,9 +38,9 @@ set.seed(20170101)  #remove to test for different bootstraps
 
 ```{r}
 RUNS = 100; #bootstrap runs
-my.strains=c("101S", "M1-2","M13","M14","M2-8","M22","M32","M34","M5","M8","RM112N","S288c","SGU57", "YPS128","YPS163")
+strains=c("101S", "M1-2","M13","M14","M2-8","M22","M32","M34","M5","M8","RM112N","S288c","SGU57", "YPS128","YPS163")
 
-report = data.frame(cbind(my.strains))
+report = data.frame(cbind(strains))
 report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; report$longfilename=NA; 
 
 ```
@@ -53,7 +53,7 @@ for( BootstrapCount in 1:RUNS ) {#!!!!!!
 
 for( i in 1:length(report[,1])){
 #for( i in 3:4){
-  filename = paste("rls/", my.strains[i], ".csv", sep='' ); 
+  filename = paste("rls/", strains[i], ".csv", sep='' ); 
   report$longfilename[i] = filename; 
   tb = read.csv( filename, header= F)
   report$samplesize[i] = length(tb[,1])
@@ -165,7 +165,7 @@ names(BootstrapMean)
 
 Reorganized the columns
 ```{r}
-BootstrapMean = BootstrapMean[, c( "my.strains",  "samplesize",  "R", "Rstd",  "t0",  "t0std",  "n",  "nstd",   "G",  
+BootstrapMean = BootstrapMean[, c( "strains",  "samplesize",  "R", "Rstd",  "t0",  "t0std",  "n",  "nstd",   "G",  
                                    "Gstd", "avgLS",  "avgLSstd", "stdLS",   "BestModel",  
                                    "longfilename",   "CV",  "GompGFlex",  "GompRFlex",  "GompLogLikFlex", 
  "WeibShapeFlex",  "WeibRateFlex",  "WeibLogLikFlex",  "WeibAICFlex", "GompAICFlex", "BinomialAIC"  )];
@@ -174,7 +174,7 @@ BootstrapMean
 
 Merge mean and std for publication
 ```{r}
-BootstrapMeanPublishing = data.frame( BootstrapMean[, c("my.strains")] )
+BootstrapMeanPublishing = data.frame( BootstrapMean[, c("strains")] )
 BootstrapMeanPublishing$RwithStd = as.vector( paste(round(BootstrapMean$R, 4), round(BootstrapMean$Rstd,4), sep=" +/- ") );
 BootstrapMeanPublishing$t0withStd = as.vector( paste(round(BootstrapMean$t0, 1), round(BootstrapMean$t0std,1), sep=" +/- ") );
 BootstrapMeanPublishing$nwithStd = as.vector( paste(round(BootstrapMean$n, 1), round(BootstrapMean$nstd,3), sep=" +/- ") );
