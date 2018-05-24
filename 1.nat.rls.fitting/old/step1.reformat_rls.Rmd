@@ -1,0 +1,57 @@
+---
+title: "Mediation test on natural isolates. short version"
+author: "h qin"
+date: "June 13, 2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r}
+rm(list=ls())
+#set.seed(20170101)
+#setwd("~/github/0.network.aging.prj.bmc/0a.rls.fitting")
+setwd("~/github/bmc_netwk_aging_manuscript/R1/0.nat.rls.fitting")
+#library('flexsurv')
+#source("../lifespan.r")
+```
+
+# Parse  strain names from files
+
+```{r}
+files = list.files(path="../qinlab_rls/", pattern="rls.tab")
+tmp1 = gsub("\\d{6}.", "", files)
+redundant_strains = gsub(".rls.tab", "", tmp1)
+strains = sort( unique( redundant_strains ))
+strains
+```
+
+
+```{r}
+my.strains=c("101S", "M1-2","M13","M14","M2-8","M22","M32","M34","M5","M8","RM112N","S288c","SGU57", "YPS128","YPS163")
+files2=c();
+for( i in 1:length(my.strains)){
+ files2 = c( files2, files[grep(my.strains[i], files)]);
+}
+
+files = files2; 
+strains = my.strains; 
+```
+
+# Merge all RLS into a single strain file. 
+```{r, message=FALSE }
+for( i in 1:length(my.strains)){
+#for( i in 3:4){
+  my.files = files[grep(strains[i], files)]
+  tb = read.table( paste("../qinlab_rls/",my.files[1],sep=''), sep="\t")
+  if( length(my.files)> 1){
+    for( fi in 2:length(my.files)) {
+      tmp.tb = read.table( paste("../qinlab_rls/",my.files[fi],sep=''), sep="\t")
+      tb = rbind( tb, tmp.tb)
+    }
+  }
+  write.table(tb, file = paste("rls/",my.strains[i], ".csv", sep = ""), quote = F, row.names = F, col.names = F)
+}
+```
+

@@ -1,0 +1,194 @@
+---
+title: "Fit mutant with binomial aging model"
+author: "h qin"
+date: "June 28 2017 - `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r}
+rm(list=ls())
+#host = "Applejack" #"Ridgeside"
+#if (host == "AppleJack") {
+# setwd("~/github/bmc_netwk_aging_manuscript/R1/1.kaeberlein04plos")
+#}
+#if (host == "Ridgeside") {
+#}
+
+library('flexsurv')
+library('stringr')
+source("../lifespan.r")
+list.files()
+```
+
+
+```{r}
+tb.ori = read.table("092304.merged.rls.csv", header = T, sep="\t")
+#summary(tb.ori)
+```
+
+# Explore the fitting outcomes of 'flexsurv'. 
+```{r}
+strains = names(tb.ori)
+strains
+```
+
+```{r}
+my.strains = c("fig4b.BY4742.2glucose",  "fig4b.by4742.SIR2.ox.2glucose",  "fig2a.sir2", "fig2b.sir2",              "fig1b.BY4742", "fig1b.fob1","fig1b.hxk2","fig1b.fob1.hxk2"   )
+my.labels = c("BY4742",                  "SIR2_Overexpression",             'sir2',     'sir2', 
+              "BY4742", "fob1",  "hxk2", "fob1 hxk2");
+
+tb = tb.ori[, my.strains]
+
+report = data.frame(my.strains)
+report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; #report$longfilename=NA; 
+
+```
+
+
+# Now, fit all RLS data sets by strains
+
+```{r, message=FALSE }
+for( i in 1:length(report[,1])){
+  #report$samplesize[i] = length(tb[,i])
+  my.data = tb[,i]
+  my.data = my.data[! is.na(my.data)]
+  report$samplesize[i] = length(my.data)
+  
+  GompFlex = flexsurvreg(formula = Surv(tb[,i]) ~ 1, dist = 'gompertz')
+  WeibFlex = flexsurvreg(formula = Surv(tb[,i]) ~ 1, dist = 'weibull')
+
+  report$avgLS[i] =  mean(tb[,i], na.rm=T)
+  report$stdLS[i] =  sd(tb[,i], na.rm = T)
+  report$CV[i] = report$stdLS[i] / report$avgLS[i]
+
+  report$GompGFlex[i] = GompFlex$res[1,1]
+  report$GompRFlex[i] = GompFlex$res[2,1]
+  report$GompLogLikFlex[i] = round(GompFlex$loglik, 1)
+  report$GompAICFlex[i] = round(GompFlex$AIC)
+
+  report$WeibShapeFlex[i] = WeibFlex$res[1,1]
+  report$WeibRateFlex[i] = WeibFlex$res[2,1]
+  report$WeibLogLikFlex[i] = round(WeibFlex$loglik, 1)  
+  report$WeibAICFlex[i] = round(WeibFlex$AIC)
+
+  #set initial values
+  Rhat = report$GompRFlex[i]; # 'i' was missing. a bug costed HQ a whole afternoon.
+  Ghat = report$GompGFlex[i];
+  nhat = 6;  
+  t0= (nhat-1)/Ghat;
+  fitBinom = optim ( c(Rhat, t0, nhat),  llh.binomialMortality.single.run, 
+                     lifespan=tb[,i], 
+                     #method='SANN') #SANN needs control  
+                     method="L-BFGS-B", 
+                     lower=c(1E-10, 1, 1), upper=c(1,200,20) );  
+  report[i, c("R", "t0", "n")] = fitBinom$par[1:3]
+  report$G[i] = (report$n[i] - 1)/report$t0[i]
+}
+```
+
+Show the results
+```{r}
+#report[ grep("tBY", report$strains), ]
+report
+```
+
+
+Output
+```{r}
+write.csv(report, file = 'sandbox/_report_kaeberlein04_fit.csv', row.names = FALSE)
+
+```
+
+#Overlay the binomial aging model with observation. 
+see  http://hongqinlab.blogspot.com/2013/12/binomial-mortailty-model.html
+ m = R ( 1 + t/t0)^(n-1)
+ s = exp( (R t0/n)*(1 - (1+t/t0)^n ) )  
+
+```{r}
+for( i in 1:length(report[,1])){
+  #report$samplesize[i] = length(tb[,i])
+  my.data = tb[,i]
+  my.data = my.data[! is.na(my.data)]
+
+  ret = calculate.s(my.data)
+  plot( ret$s ~ ret$t, main=my.strains[i]);
+  print (report[i,  ]);
+
+    #overlay binomial aging viability
+  print (report[i, c("R", "t0", "n", "G")] );
+  t = seq(0,max(ret$t*1.1), by=0.1);
+  # s = exp( (R t0/n)*(1 - (1+t/t0)^n ) )  
+  s = exp( (report$R[i]* report$t0[i]/report$n[i])*(1 - (1+t/report$t0[i])^report$n[i] ) ) ; 
+  lines(s ~ t, col='red')
+  
+  #overlay gompertz  viability
+  s.g =  G.s( c(report$GompRFlex[i], report$GompGFlex[i], 0), t )
+  lines(s.g ~ t, col='blue')
+
+}  
+```
+
+
+#over probility mass function with binomial model
+see  http://hongqinlab.blogspot.com/2013/12/binomial-mortailty-model.html
+ m = R ( 1 + t/t0)^(n-1)
+ s = exp( (R t0/n)*(1 - (1+t/t0)^n ) )  
+ pdf = s*m
+ 
+```{r}
+for( i in 1:length(report[,1])){
+  #report$samplesize[i] = length(tb[,i])
+  my.data = tb[,i]
+  my.data = my.data[! is.na(my.data)]
+  
+  h= hist(my.data, br=max(my.data)/2)
+  plot( h$density ~ h$mids, main=my.strains[i], xlab="RLS",ylab="density")
+  t= seq(0, max(h$mids), by=0.1)
+  s = exp( (report$R[i]* report$t0[i]/report$n[i])*(1 - (1+t/report$t0[i])^report$n[i] ) ) ; 
+  m = report$R[i]*(1 + t/ report$t0[i])^(report$n[i] -1 )
+  pdf = s*m
+  lines( pdf ~ t, col='red')
+  
+  s.g =  G.s( c(report$GompRFlex[i], report$GompGFlex[i]), t ); 
+  m.g =  report$GompRFlex[i]*exp(report$GompGFlex[i]*t)
+  pdf.g = s.g * m.g
+  lines( pdf.g ~ t, col="blue")
+}
+```
+
+
+
+It seems binomial model aging is a reasonable fit whenevern Gompertz model is a reasonable fit. 
+```{r}
+
+for( i in 1:length(report[,1])){
+  my.data = tb[,i]
+  my.data = my.data[! is.na(my.data)]
+  
+  h= hist(my.data, br= seq(0, max(my.data), length.out = sqrt(max(my.data))+7 ));
+  
+  figname = paste( 'plots/', my.labels[i], '.jpg', sep='');
+  jpeg(figname, width=480, height=480, quality=100);
+  
+  hist(my.data, br= seq(0, max(my.data), length.out = sqrt(max(my.data))+7 ),
+       probability = TRUE, col='gray', border='white', xlab='RLS', ylab='probability',
+       main=my.labels[i], ylim=c(0, max(h$density)*1.1), xlim=c(0, max(h$mids)*1.1))
+  #plot( h$density ~ h$mids, main=my.strains[i], xlab="RLS",ylab="density")
+  #par(new=TRUE);
+  t= seq(0, max(h$mids)*1.2, by=0.1)
+  s = exp( (report$R[i]* report$t0[i]/report$n[i])*(1 - (1+t/report$t0[i])^report$n[i] ) ) ; 
+  m = report$R[i]*(1 + t/ report$t0[i])^(report$n[i] -1 )
+  pdf = s*m
+  lines( pdf ~ t, col='red')
+  
+  s.g =  G.s( c(report$GompRFlex[i], report$GompGFlex[i]), t ); 
+  m.g =  report$GompRFlex[i]*exp(report$GompGFlex[i]*t)
+  pdf.g = s.g * m.g
+  lines( pdf.g ~ t, col="blue")
+  dev.off();
+}
+
+```
+

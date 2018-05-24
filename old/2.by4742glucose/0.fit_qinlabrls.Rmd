@@ -1,0 +1,173 @@
+---
+title: "0.fit_qinlabrls.Rmd"
+author: "h qin"
+date: "June 9, July 6-11, 2016"
+output: html_document
+---
+
+20160711-> Fitting RLS dataset merged by strains. 
+
+20160706-0711. Finished batch fitting of all individual RLS data sets. The fitting results showed that 'n' are often in the range of [5,7], though it is very noisy. 
+
+
+```{r}
+rm(list=ls())
+setwd("~/github/0.network.aging.prj.bmc/0a.rls.fitting")
+library('flexsurv')
+source("lifespan.r")
+```
+
+# parse the strains from files
+
+```{r}
+files = list.files(path="../qinlab_rls/", pattern="rls.tab")
+tmp1 = gsub("\\d{6}.", "", files)
+redundant_strains = gsub(".rls.tab", "", tmp1)
+strains = sort( unique( redundant_strains ))
+strains
+report = data.frame(cbind(strains))
+report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; 
+```
+
+# Explore the fitting outcomes of 'flexsurv'. 
+
+```{r}
+i=2
+  tb = read.table( paste("../qinlab_rls/",files[i],sep=''), sep="\t")
+  GompFlex = flexsurvreg(formula = Surv(tb[,1]) ~ 1, dist = 'gompertz')
+  WeibFlex = flexsurvreg(formula = Surv(tb[,1]) ~ 1, dist = 'weibull')
+str(GompFlex)
+GompFlex$res
+GompFlex$res.t
+GompFlex$opt$hessian
+str(WeibFlex)
+```
+
+# Now, fit all RLS data sets by strains
+
+```{r, message=FALSE }
+for( i in 1:length(report[,1])){
+#for( i in 3:4){
+  my.files = files[grep(strains[i], files)]
+  tb = read.table( paste("../qinlab_rls/",my.files[1],sep=''), sep="\t")
+  if( length(my.files)> 1){
+    for( fi in 2:length(my.files)) {
+      tmp.tb = read.table( paste("../qinlab_rls/",my.files[fi],sep=''), sep="\t")
+      tb = rbind( tb, tmp.tb)
+    }
+  }
+  report$samplesize[i] = length(tb[,1])
+
+  GompFlex = flexsurvreg(formula = Surv(tb[,1]) ~ 1, dist = 'gompertz')
+  WeibFlex = flexsurvreg(formula = Surv(tb[,1]) ~ 1, dist = 'weibull')
+
+  report$avgLS[i] =  mean(tb[,1])
+  report$stdLS[i] =  sd(tb[,1])
+  report$CV[i] = report$stdLS[i] / report$avgLS[i]
+
+  report$GompGFlex[i] = GompFlex$res[1,1]
+  report$GompRFlex[i] = GompFlex$res[2,1]
+  report$GompLogLikFlex[i] = round(GompFlex$loglik, 1)
+  report$GompAICFlex[i] = round(GompFlex$AIC)
+
+  report$WeibShapeFlex[i] = WeibFlex$res[1,1]
+  report$WeibRateFlex[i] = WeibFlex$res[2,1]
+  report$WeibLogLikFlex[i] = round(WeibFlex$loglik, 1)  
+  report$WeibAICFlex[i] = round(WeibFlex$AIC)
+
+  #set initial values
+  Rhat = report$GompRFlex[i]; # 'i' was missing. a bug costed HQ a whole afternoon.
+  Ghat = report$GompGFlex[i];
+  nhat = 6;  
+  t0= (nhat-1)/Ghat;
+  fitBinom = optim ( c(Rhat, t0, nhat),  llh.binomialMortality.single.run, 
+                     lifespan=tb[,1], 
+                     #method='SANN') #SANN needs control  
+                     method="L-BFGS-B", 
+                     lower=c(1E-10, 1, 1), upper=c(1,200,20) );  
+  report[i, c("R", "t0", "n")] = fitBinom$par[1:3]
+  report$G[i] = (report$n[i] - 1)/report$t0[i]
+}
+```
+
+Show the results
+```{r}
+report[ grep("BY", report$strains), ]
+```
+
+Strehler-Mildvan correlation in natural isolates
+```{r}
+# my.strains=c("101S", "BY4743","M1-2","M13","M14","M2-8","M22","M32","M34","M5","M8","RM112N","S288c","SGU57","SK1","W303","YPS128","YPS163")
+
+my.strains=c("101S", "M1-2","M13","M14","M2-8","M22","M32","M34","M5","M8","RM112N","S288c","SGU57", "YPS128","YPS163")
+report2 = report[ match(my.strains, report$strains), ]
+summary(lm(log10(report2$GompRFlex) ~ report2$GompGFlex))
+summary(lm(log10(report2$R) ~ report2$GompGFlex))
+summary(lm(log10(report2$R) ~ report2$G))
+summary(lm(report2$GompGFlex ~ report2$G))
+
+report2
+```
+
+# Plot initial virtula life ~ n (average interactions)
+
+```{r}
+plot( report2$t0 ~ report2$n, col='red', xlim=c(5.5, 9), ylim=c(25, 80), pch=19, xlab='n', ylab='t0')
+my.x = report2$n + 0.1; my.y = report2$t0 + 2; 
+names(my.x) = report2$strains; names(my.y) = report2$strains; 
+my.y[c("M14","SGU57", "M32","M13" )]=c(52, 52, 33, 38)
+text(my.x,my.y, report2$strains )
+```
+
+Gompert versus Weibull?
+AIC: smaller is better (for information loss)
+```{r}
+report$BestModel = ifelse(report$GompAICFlex < report$WeibAICFlex, "Gomp", "Weib")
+report$BestModel = ifelse(abs(report$GompAICFlex - report$WeibAICFlex)<2, "<2", report$BestModel)
+```
+
+
+CV ~ Gomp and Weibull? How does noises influence likelihood of Gompertz and Weibull fitting? 
+```{r}
+summary(lm(report$CV ~ report$BestModel ))
+summary(lm(report$CV ~ report$WeibLogLikFlex ))
+summary(lm(report$CV ~ report$GompLogLikFlex  ))
+summary(lm(report$CV ~ (report$GompLogLikFlex - report$WeibLogLikFlex)))
+plot( report$GompLogLikFlex ~ report$CV, col="red", pch=3, xlim=c(0, 0.8), ylim=c(-220, -80))
+points( report$CV, report$WeibLogLikFlex, col="blue", pch=4)
+m1 = lm( report$GompLogLikFlex ~ report$CV)
+m2 = lm( report$WeibLogLikFlex ~ report$CV)
+abline( m1, col="red", lty=2)
+abline( m2, col='blue', lty=1)
+text(0.6, -210, "nearly the same!?")
+```
+
+The QIN-RLS data suggested that noisy system signal perfer Gompertz model, based on GG01 theory. 
+Notice that CV measures distrubition of system signals and are different from white noises (residues)
+
+```{r}
+report$DeltaGompWeiLLH = report$GompLogLikFlex - report$WeibLogLikFlex
+plot( report$DeltaGompWeiLLH ~ report$CV )
+m3 = lm( report$DeltaGompWeiLLH ~ report$CV)
+abline(m3, col='red')
+```
+
+
+TODO: Calculate the white noises (fitting errors) using the fitting residues for Gompertz and Weibull models. 
+
+```{r}
+# report$residues ?? 
+
+```
+
+Output
+```{r}
+write.csv(report, file = 'sandbox/_report_qinlab_strains_rls.csv', row.names = FALSE)
+
+write.csv(report2, file = 'sandbox/_report_qinlab_natural_isolates_rls.csv', row.names = FALSE)
+
+```
+
+
+
+
