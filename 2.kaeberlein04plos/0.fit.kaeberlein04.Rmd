@@ -89,7 +89,7 @@ see  http://hongqinlab.blogspot.com/2013/12/binomial-mortailty-model.html
  s = exp( (R t0/n)*(1 - (1+t/t0)^n ) )  
  pdf = s*m
 
-It seems binomial model aging is a reasonable fit whenevern Gompertz model is a reasonable fit. 
+It seems binomial model aging is a reasonable fit whenever Gompertz model is a reasonable fit. 
 ```{r histogram_overlay}
 # (x,y) are legend positions for plots
 x = c(0,    0,   0,     0,   40,   55,  50,   5);

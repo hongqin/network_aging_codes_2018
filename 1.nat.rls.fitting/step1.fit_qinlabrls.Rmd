@@ -3,8 +3,8 @@ title: "0.fit_qinlabrls.Rmd"
 author: "h qin"
 date: "May 10, 2018"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 20180510Wed need to verify updated files  are consisitent with manuscript. 

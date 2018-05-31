@@ -3,8 +3,8 @@ title: "Single fit and overlay"
 author: "h qin"
 date: "June 9, July 6-11, 2017"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 20171002 Add AIC 
