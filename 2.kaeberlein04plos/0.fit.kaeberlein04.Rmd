@@ -9,18 +9,9 @@ output:
 
 ```{r}
 rm(list=ls())
-host = "Applejack" #"Ridgeside"
-if (host == "AppleJack") {
- setwd("~/github/bmc_netwk_aging_manuscript/R1/1.kaeberlein04plos")
-}
-if (host == "Ridgeside") {
-
-}
-
 library('flexsurv')
 library('stringr')
 source("../lifespan.r")
-list.files()
 ```
 
 
@@ -30,10 +21,8 @@ tb.ori = read.table("092304.merged.rls.csv", header = T, sep="\t")
 ```
 
 # Explore the fitting outcomes of 'flexsurv'. 
-```{r}
-strains = names(tb.ori)
-strains
-```
+#strains = names(tb.ori)
+#strains
 
 ```{r}
 my.strains = c("fig4b.BY4742.2glucose",  "fig4b.by4742.SIR2.ox.2glucose",  "fig2a.sir2", "fig2b.sir2",              "fig1b.BY4742", "fig1b.fob1","fig1b.hxk2","fig1b.fob1.hxk2"   )
@@ -89,84 +78,30 @@ for( i in 1:length(report[,1])){
 
 Show the results
 ```{r}
-#report[ grep("tBY", report$strains), ]
 report
 ```
 
 
 Output
-```{r}
+```{r output}
 write.csv(report, file = 'sandbox/_report_kaeberlein04_fit.csv', row.names = FALSE)
-
-```
-
-#Overlay the binomial aging model with observation. 
-see  http://hongqinlab.blogspot.com/2013/12/binomial-mortailty-model.html
- m = R ( 1 + t/t0)^(n-1)
- s = exp( (R t0/n)*(1 - (1+t/t0)^n ) )  
-
-```{r}
-for( i in 1:length(report[,1])){
-  #report$samplesize[i] = length(tb[,i])
-  my.data = tb[,i]
-  my.data = my.data[! is.na(my.data)]
-
-  ret = calculate.s(my.data)
-  plot( ret$s ~ ret$t, main=my.strains[i]);
-  print (report[i,  ]);
-
-    #overlay binomial aging viability
-  print (report[i, c("R", "t0", "n", "G")] );
-  t = seq(0,max(ret$t*1.1), by=0.1);
-  # s = exp( (R t0/n)*(1 - (1+t/t0)^n ) )  
-  s = exp( (report$R[i]* report$t0[i]/report$n[i])*(1 - (1+t/report$t0[i])^report$n[i] ) ) ; 
-  lines(s ~ t, col='red')
-  
-  #overlay gompertz  viability
-  s.g =  G.s( c(report$GompRFlex[i], report$GompGFlex[i], 0), t )
-  lines(s.g ~ t, col='blue')
-
-}  
 ```
 
 
-#over probility mass function with binomial model
+# Overlay histogram with probability density function of  binomial aging model
 see  http://hongqinlab.blogspot.com/2013/12/binomial-mortailty-model.html
  m = R ( 1 + t/t0)^(n-1)
  s = exp( (R t0/n)*(1 - (1+t/t0)^n ) )  
  pdf = s*m
- 
-```{r}
-for( i in 1:length(report[,1])){
-  #report$samplesize[i] = length(tb[,i])
-  my.data = tb[,i]
-  my.data = my.data[! is.na(my.data)]
-  
-  h= hist(my.data, br=max(my.data)/2)
-  plot( h$density ~ h$mids, main=my.strains[i], xlab="RLS",ylab="density")
-  t= seq(0, max(h$mids), by=0.1)
-  s = exp( (report$R[i]* report$t0[i]/report$n[i])*(1 - (1+t/report$t0[i])^report$n[i] ) ) ; 
-  m = report$R[i]*(1 + t/ report$t0[i])^(report$n[i] -1 )
-  pdf = s*m
-  lines( pdf ~ t, col='red')
-  
-  s.g =  G.s( c(report$GompRFlex[i], report$GompGFlex[i]), t ); 
-  m.g =  report$GompRFlex[i]*exp(report$GompGFlex[i]*t)
-  pdf.g = s.g * m.g
-  lines( pdf.g ~ t, col="blue")
-}
-```
-
-
 
 It seems binomial model aging is a reasonable fit whenevern Gompertz model is a reasonable fit. 
-```{r}
+```{r histogram_overlay}
 
 for( i in 1:length(report[,1])){
   my.data = tb[,i]
   my.data = my.data[! is.na(my.data)]
   
-  h= hist(my.data, br=max(my.data)/2);
+  h= hist(my.data, br=max(my.data)/2, plot = FALSE);
   hist(my.data, probability = TRUE, col='gray', border='white', xlab='RLS', ylab='probability',
        main=my.strains[i], ylim=c(0, max(h$density)*1.1), xlim=c(0, max(h$mids)*1.1))
   #plot( h$density ~ h$mids, main=my.strains[i], xlab="RLS",ylab="density")
@@ -182,6 +117,5 @@ for( i in 1:length(report[,1])){
   pdf.g = s.g * m.g
   lines( pdf.g ~ t, col="blue")
 }
-
 ```
 
