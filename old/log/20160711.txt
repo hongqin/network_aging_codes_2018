@@ -1,7 +1,0 @@
-Finished binomial fitting today for Qinlab RLS datasets. Fitting for RLS by experiments are often noisy. So, I should merged the datasets by strains. I need to pick strains that can demonstrate the utility of this network aging approach. So, yeast mutants with clear mechanisms are good candidates. 
-
--> sir2
--> Vacole role
--> CR effect
-
-
