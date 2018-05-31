@@ -315,17 +315,19 @@ library('flexsurv')</code></pre>
 <pre><code>## Loading required package: survival</code></pre>
 <pre class="r"><code>library('stringr')
 source(&quot;../lifespan.r&quot;)</code></pre>
-<pre class="r"><code>tb.ori = read.table(&quot;092304.merged.rls.csv&quot;, header = T, sep=&quot;\t&quot;)
-#summary(tb.ori)</code></pre>
+<p>RLS data are from Kaeberlein et al 2004, Plos Genetics <a href="http://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.0020296" class="uri">http://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.0020296</a></p>
+<p>The original data set is at <a href="https://doi.org/10.1371/journal.pbio.0020296.sd002" class="uri">https://doi.org/10.1371/journal.pbio.0020296.sd002</a></p>
+<pre class="r"><code>tb = read.csv(&quot;kaeberlein04_selected_strains.csv&quot;)</code></pre>
 <section id="explore-the-fitting-outcomes-of-flexsurv." class="level1">
 <h1>Explore the fitting outcomes of ‘flexsurv’.</h1>
 <p>#strains = names(tb.ori) #strains</p>
-<pre class="r"><code>my.strains = c(&quot;fig4b.BY4742.2glucose&quot;,  &quot;fig4b.by4742.SIR2.ox.2glucose&quot;,  &quot;fig2a.sir2&quot;, &quot;fig2b.sir2&quot;,              &quot;fig1b.BY4742&quot;, &quot;fig1b.fob1&quot;,&quot;fig1b.hxk2&quot;,&quot;fig1b.fob1.hxk2&quot;   )
+<pre class="r"><code>#my.strains = c(&quot;fig4b.BY4742.2glucose&quot;,  &quot;fig4b.by4742.SIR2.ox.2glucose&quot;,  &quot;fig2a.sir2&quot;, &quot;fig2b.sir2&quot;,              &quot;fig1b.BY4742&quot;, &quot;fig1b.fob1&quot;,&quot;fig1b.hxk2&quot;,&quot;fig1b.fob1.hxk2&quot;   )
 #my.strains = strains
-tb = tb.ori[, my.strains]
-
+#tb = tb.ori[, my.strains]
+my.strains = names(tb); 
 report = data.frame(my.strains)
-report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; #report$longfilename=NA; </code></pre>
+report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; #report$longfilename=NA; 
+#write.csv(tb, &quot;kaeberlein04_selected_strains.csv&quot;, row.names = FALSE, quote = FALSE)</code></pre>
 </section>
 <section id="now-fit-all-rls-data-sets-by-strains" class="level1">
 <h1>Now, fit all RLS data sets by strains</h1>

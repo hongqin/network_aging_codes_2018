@@ -14,24 +14,21 @@ library('stringr')
 source("../lifespan.r")
 ```
 
+The RLS data used here are from Kaeberlein et al 2004, Plos Genetics 
+http://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.0020296
 
-```{r}
-tb.ori = read.table("092304.merged.rls.csv", header = T, sep="\t")
-#summary(tb.ori)
+The original data set is at
+https://doi.org/10.1371/journal.pbio.0020296.sd002
+
+```{r load_rls}
+tb = read.csv("kaeberlein04_selected_strains.csv")
 ```
 
-# Explore the fitting outcomes of 'flexsurv'. 
-#strains = names(tb.ori)
-#strains
-
-```{r}
-my.strains = c("fig4b.BY4742.2glucose",  "fig4b.by4742.SIR2.ox.2glucose",  "fig2a.sir2", "fig2b.sir2",              "fig1b.BY4742", "fig1b.fob1","fig1b.hxk2","fig1b.fob1.hxk2"   )
-#my.strains = strains
-tb = tb.ori[, my.strains]
-
+```{r init_report}
+my.strains = names(tb); 
 report = data.frame(my.strains)
 report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; #report$longfilename=NA; 
-
+#write.csv(tb, "kaeberlein04_selected_strains.csv", row.names = FALSE, quote = FALSE)
 ```
 
 
