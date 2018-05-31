@@ -3,8 +3,8 @@ title: "Fit mutant with binomial aging model"
 author: "h qin"
 date: "June 28 2017 - `r format(Sys.time(), '%d %B, %Y')`"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r}
@@ -31,12 +31,10 @@ report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; #re
 #write.csv(tb, "kaeberlein04_selected_strains.csv", row.names = FALSE, quote = FALSE)
 ```
 
+# Fit all RLS data sets by strains
 
-# Now, fit all RLS data sets by strains
-
-```{r, message=FALSE }
+```{r fitting, message=FALSE }
 for( i in 1:length(report[,1])){
-  #report$samplesize[i] = length(tb[,i])
   my.data = tb[,i]
   my.data = my.data[! is.na(my.data)]
   report$samplesize[i] = length(my.data)
@@ -74,7 +72,7 @@ for( i in 1:length(report[,1])){
 ```
 
 Show the results
-```{r}
+```{r report}
 report
 ```
 
@@ -93,6 +91,9 @@ see  http://hongqinlab.blogspot.com/2013/12/binomial-mortailty-model.html
 
 It seems binomial model aging is a reasonable fit whenevern Gompertz model is a reasonable fit. 
 ```{r histogram_overlay}
+# (x,y) are legend positions for plots
+x = c(0,    0,   0,     0,   40,   55,  50,   5);
+y = c(0.06, 0.06, 0.1, 0.1,0.04, 0.03, 0.03, 0.03  ); 
 
 for( i in 1:length(report[,1])){
   my.data = tb[,i]
@@ -107,12 +108,14 @@ for( i in 1:length(report[,1])){
   s = exp( (report$R[i]* report$t0[i]/report$n[i])*(1 - (1+t/report$t0[i])^report$n[i] ) ) ; 
   m = report$R[i]*(1 + t/ report$t0[i])^(report$n[i] -1 )
   pdf = s*m
-  lines( pdf ~ t, col='red')
+  lines( pdf ~ t, col='red', lty=1)
   
   s.g =  G.s( c(report$GompRFlex[i], report$GompGFlex[i]), t ); 
   m.g =  report$GompRFlex[i]*exp(report$GompGFlex[i]*t)
   pdf.g = s.g * m.g
-  lines( pdf.g ~ t, col="blue")
+  lines( pdf.g ~ t, col="blue", lty=2)
+  
+  legend ( x[i], y[i], c("Binomial","Gompertz"), col=c("red","blue"), lty=c(1,2) )
 }
 ```
 
