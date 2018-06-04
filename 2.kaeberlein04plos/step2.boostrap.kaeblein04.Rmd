@@ -27,7 +27,7 @@ summary(tb)
 ```
 
 ```{r}
-strains = names(tb.ori)
+strains = names(tb)
 strains
 ```
 
