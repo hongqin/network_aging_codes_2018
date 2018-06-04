@@ -322,7 +322,7 @@ names(tb)</code></pre>
 <pre><code>## [1] &quot;fig1b.BY4742&quot;                  &quot;fig2a.sir2&quot;                   
 ## [3] &quot;fig4b.by4742.SIR2.ox.2glucose&quot; &quot;fig1b.fob1&quot;                   
 ## [5] &quot;fig1b.hxk2&quot;                    &quot;fig1b.fob1.hxk2&quot;</code></pre>
-<pre class="r"><code>my.strains = c(&quot;BY4742&quot;, &quot;sir2&quot;, &quot;SIR2.ox&quot;, &quot;for1&quot;, &quot;hxk2&quot;, &quot;fob1 hxk2&quot;);
+<pre class="r"><code>my.strains = c(&quot;BY4742&quot;, &quot;sir2&quot;, &quot;SIR2.ox&quot;, &quot;fob1&quot;, &quot;hxk2&quot;, &quot;fob1 hxk2&quot;);
 report = data.frame(my.strains)
 report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; #report$longfilename=NA; 
 #write.csv(tb, &quot;kaeberlein04_selected_strains.csv&quot;, row.names = FALSE, quote = FALSE)</code></pre>
@@ -369,7 +369,7 @@ report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; #re
 ## 1     BY4742        250 0.004796452  58.10834 8.109395 0.12234725 26.62400
 ## 2       sir2         90 0.002656909  16.80162 8.109348 0.42313480 13.96667
 ## 3    SIR2.ox         60 0.003068054  66.82089 8.067874 0.10577341 34.60000
-## 4       for1        140 0.003056547  71.37470 7.695271 0.09380453 37.75000
+## 4       fob1        140 0.003056547  71.37470 7.695271 0.09380453 37.75000
 ## 5       hxk2        120 0.005736777 103.59300 7.578456 0.06350290 36.73333
 ## 6  fob1 hxk2        160 0.005902597 120.65937 6.023612 0.04163466 48.28125
 ##       stdLS        CV  GompGFlex   GompRFlex GompLogLikFlex GompAICFlex

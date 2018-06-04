@@ -26,7 +26,7 @@ names(tb)
 ```
 
 ```{r init_report}
-my.strains = c("BY4742", "sir2", "SIR2.ox", "for1", "hxk2", "fob1 hxk2");
+my.strains = c("BY4742", "sir2", "SIR2.ox", "fob1", "hxk2", "fob1 hxk2");
 report = data.frame(my.strains)
 report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; #report$longfilename=NA; 
 #write.csv(tb, "kaeberlein04_selected_strains.csv", row.names = FALSE, quote = FALSE)
