@@ -1,7 +1,7 @@
 ---
 title: "Fit mutant with binomial aging model"
 author: "h qin"
-date: "June 28 2017 - `r format(Sys.time(), '%d %B, %Y')`"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   html_document: default
   pdf_document: default
@@ -93,13 +93,13 @@ It seems binomial model aging is a reasonable fit whenever Gompertz model is a r
 ```{r histogram_overlay}
 
 # html version, (x,y) are legend positions for plots
-x = c(0,    0,   0,     0,   40,   55,  50,   5);
-y = c(0.06, 0.06, 0.1, 0.1,0.04, 0.03, 0.03, 0.03  ); 
+#x = c(0,    0,   0,     0,   40,   55,  50,   5);
+#y = c(0.06, 0.06, 0.1, 0.1,0.04, 0.03, 0.03, 0.03  ); 
 
 pdf("kae04_plots.pdf", width=4, height =4 );
 # pdf version, (x,y) are legend positions for plots
-x = c(0,    32,   0,     0,   32,   0,  0,    0   );
-y = c(0.07, 0.06, 0.12, 0.12,0.05, 0.04, 0.04, 0.031  ); 
+#x = c(0,    32,   0,     0,   32,   0,  0,    0   );
+#y = c(0.07, 0.06, 0.12, 0.12,0.05, 0.04, 0.04, 0.031  ); 
 
 
 for( i in 1:length(report[,1])){
@@ -122,7 +122,8 @@ for( i in 1:length(report[,1])){
   pdf.g = s.g * m.g
   lines( pdf.g ~ t, col="blue", lty=2)
   
-  legend ( x[i], y[i], c("Binomial","Gompertz"), col=c("red","blue"), lty=c(1,2), cex=0.7 )
+#  legend ( x[i], y[i], c("Binomial","Gompertz"), col=c("red","blue"), lty=c(1,2), cex=0.7 )
+  legend ( "topright", c("Binomial","Gompertz"), col=c("red","blue"), lty=c(1,2), cex=0.7 )
 }
 dev.off()
 ```
