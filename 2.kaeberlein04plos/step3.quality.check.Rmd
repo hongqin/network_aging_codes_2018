@@ -1,0 +1,59 @@
+
+---
+title: "Compare Bootstrap and single-fitting results"
+author: "H Qin"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r}
+rm(list=ls())
+library('flexsurv')
+library('stringr')
+source("../lifespan.r")
+list.files( path='sandbox', pattern='csv')
+```
+
+# boostrap results 
+```{r}
+btb = read.csv("sandbox/_Kaberlein04_Bootstrap_summary.csv")
+summary(btb)
+```
+
+# single fitting results
+
+```{r}
+stb = read.csv("sandbox/_Kaeberlein04_singlefit.csv")
+summary(stb)
+```
+
+#verify matching rows in the two fitting results
+```{r}
+cbind(as.character(stb$my.strains), as.character(btb$my.strains));
+```
+
+#R 
+```{r}
+plot(stb$R ~ btb$R )
+text(btb$R,stb$R, as.character(stb$my.strains))
+
+summary(lm(stb$R ~ btb$R));
+```
+
+#t0
+```{r}
+plot( stb$t0 ~ btb$t0 )
+text(btb$t0,stb$t0, as.character(stb$my.strains))
+
+summary(lm(stb$t0 ~ btb$t0));
+```
+
+#n 
+```{r}
+plot(stb$n ~ btb$n);
+text(btb$n,stb$n, as.character(stb$my.strains))
+summary(lm(stb$n ~ btb$n));
+```
+

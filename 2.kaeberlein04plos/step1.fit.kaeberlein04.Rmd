@@ -80,7 +80,7 @@ report
 
 Output
 ```{r output}
-write.csv(report, file = 'sandbox/_report_kaeberlein04_fit.csv', row.names = FALSE)
+write.csv(report, file = 'sandbox/_Kaeberlein04_singlefit.csv', row.names = FALSE)
 ```
 
 
