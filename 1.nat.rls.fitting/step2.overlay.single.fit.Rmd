@@ -1,28 +1,14 @@
 ---
 title: "Single fit and overlay"
 author: "h qin"
-date: "June 9, July 6-11, 2017"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   html_document: default
   pdf_document: default
 ---
 
-20171002 Add AIC 
-The log-likelihood values calculated by FlexSurv and my own routine return values with 10x differences. This is an old problem. 
-see http://hongqinlab.blogspot.com/2014/07/compare-binomial-gompertz-and-weibull.html 
-It seems FlexSurv used the loglikehood value from optim(). When I switch to optim returned $value, the results are comparable. 
-
-20170424. Major bug found. file names and strains names are inconsistent. 
-
-20160711-> Fitting RLS dataset merged by strains. 
-
-20160706-0711. Finished batch fitting of all individual RLS data sets. The fitting results showed that 'n' are often in the range of [5,7], though it is very noisy. 
-
-
 ```{r}
 rm(list=ls())
-#setwd("~/github/0.network.aging.prj.bmc/0a.rls.fitting")
-#setwd("~/github/bmc_netwk_aging_manuscript/R1/0.nat.rls.fitting")
 library('flexsurv')
 source("../lifespan.r")
 ```
@@ -106,7 +92,7 @@ for( i in 1:length(report[,1])){
   nhat = 8;  
   t0= (nhat-1)/Ghat;
   
-  if( is.na( match(my.strains[i], c('M8' )) ) ) {
+  #if( is.na( match(my.strains[i], c('M8' )) ) ) {
     fitBinom = optim ( c(Rhat, t0, nhat),  llh.binomialMortality.single.run, 
                        lifespan=tb[,1], 
                        #method='SANN') #SANN needs control  
@@ -114,18 +100,17 @@ for( i in 1:length(report[,1])){
                        lower=c(1E-4, 1, 2), upper=c(0.1,200,100) );  
     report[i, c("R", "t0", "n")] = fitBinom$par[1:3]
     report$BinomialAIC[i] = 2*3 + 2*fitBinom$value
-  } else { #M8, fix n
-    print(my.strains[i])
+  #} else { #M8, fix n
+  #  print(my.strains[i])
     #llh.binomialMortality.single.run.FixedN <- function( Rt0n, lifespan, debug=0 ) {
-    n=11.5;
-    fitBinom = optim ( c(Rhat, t0, nhat),  llh.binomialMortality.single.run.FixedN, 
-                       lifespan=tb[,1], 
-                       #method='SANN') #SANN needs control  
-                       method="L-BFGS-B", 
-                       lower=c(1E-5, 1, 2), upper=c(0.1,200,100) );  
-    report[i, c("R", "t0", "n")] = c(fitBinom$par[1:2], n)
-    report$BinomialAIC[i] = 2*3 + 2*fitBinom$value
-  }
+  #  n=11.5;
+  #  fitBinom = optim ( c(Rhat, t0, nhat),  llh.binomialMortality.single.run.FixedN, 
+  #                     #method='SANN') #SANN needs control  
+   #                    method="L-BFGS-B", 
+  #                     lower=c(1E-5, 1, 2), upper=c(0.1,200,100) );  
+  #  report[i, c("R", "t0", "n")] = c(fitBinom$par[1:2], n)
+  #  report$BinomialAIC[i] = 2*3 + 2*fitBinom$value
+  #}
   report$G[i] = (report$n[i] - 1)/report$t0[i]
 
   #AIC 
@@ -153,28 +138,39 @@ see  http://hongqinlab.blogspot.com/2013/12/binomial-mortailty-model.html
  m = R ( 1 + t/t0)^(n-1)
  s = exp( (R t0/n)*(1 - (1+t/t0)^n ) )  
 
-```{r, message=FALSE }
+```{r histogram_plus_density, message=FALSE }
 for( i in 1:length(my.strains)){
 #for( i in 3:4){
   filename = paste("rls/", my.strains[i], ".csv", sep='' ); 
   tb = read.csv( filename, header =F)
+  my.data = tb[,1]
   
-  ret = calculate.s(tb[,1])
-  plot( ret$s ~ ret$t, main=my.strains[i]);
-  print (report[i,  ]);
-
-  #overlay binomial aging viability
-  print (report[i, c("R", "t0", "n", "G")] );
-  t = seq(0,max(ret$t*1.1), 0.1);
-  # s = exp( (R t0/n)*(1 - (1+t/t0)^n ) )  
+  h= hist(my.data, br=max(my.data)/2, plot = FALSE);
+  hist(my.data, probability = TRUE, col='gray', border='white', xlab='RLS', ylab='probability',
+       main=my.strains[i], ylim=c(0, max(h$density)*1.1), xlim=c(0, max(h$mids)*1.1))
+  
+  t= seq(0, max(h$mids)*1.2, by=0.1)
+  
+  #overlay binomial aging
   s = exp( (report$R[i]* report$t0[i]/report$n[i])*(1 - (1+t/report$t0[i])^report$n[i] ) ) ; 
-  lines(s ~ t, col='red')
+  m = report$R[i]*(1 + t/ report$t0[i])^(report$n[i] -1 )
+  pdf = s*m
+  lines( pdf ~ t, col='red', lty=1)
   
   #overlay gompertz  viability
-  s.g =  G.s( c(report$GompRFlex[i], report$GompGFlex[i], 0), t )
-  lines(s.g ~ t, col='blue')
- }
+  s.g =  G.s( c(report$GompRFlex[i], report$GompGFlex[i]), t ); 
+  m.g =  report$GompRFlex[i]*exp(report$GompGFlex[i]*t)
+  pdf.g = s.g * m.g
+  lines( pdf.g ~ t, col="blue", lty=2)
+
+  legend ( "topright", c("Binomial","Gompertz"), col=c("red","blue"), lty=c(1,2), cex=0.7 )
+
+}
  
+
+
+
+
 
 
 ```
