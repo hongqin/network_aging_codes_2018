@@ -7,24 +7,9 @@ output:
   pdf_document: default
 ---
 
-20171002 Add AIC 
-The log-likelihood values calculated by FlexSurv and my own routine return values with 10x differences. This is an old problem. 
-see http://hongqinlab.blogspot.com/2014/07/compare-binomial-gompertz-and-weibull.html 
-It seems FlexSurv used the loglikehood value from optim(). When I switch to optim returned $value, the results are comparable. 
-
 
 ```{r}
 rm(list=ls())
-#setwd("~/github/bmc_netwk_aging_manuscript/R1/0.nat.rls.fitting");
-
-#host = "Applejack" #"Ridgeside"
-#if (host == "AppleJack") {
-# setwd("/Users/hqin/github/bmc_netwk_aging_manuscript/R1/0.nat.rls.fitting");
-#}
-#if (host == "Ridgeside") {
-# setwd("/home/hqin/github/bmc_netwk_aging_manuscript/R1/0.nat.rls.fitting");
-#}
-
 library('flexsurv')
 source("lifespan.r")
 ```
@@ -46,10 +31,10 @@ report$samplesize = NA; report$R=NA; report$t0=NA; report$n=NA; report$G=NA; rep
 ```
 
 
-# Now, fit all RLS data sets by strains
+# Now, fit all RLS data sets by strains, and output each bootstrap to a single csv file. 
 
-```{r, message=FALSE }
-for( BootstrapCount in 1:RUNS ) {#!!!!!!
+```{r fit_all, message=FALSE }
+for( BootstrapCount in 1:RUNS ) {
 
 for( i in 1:length(report[,1])){
 #for( i in 3:4){
@@ -210,33 +195,4 @@ p = 0.9
 BootstrapMean$One.over.lambdaP09 = BootstrapMean$t0 * p/ (1-p)
 BootstrapMean[, c("t0", "One.over.lambdaP09")]
 ```
-
-Histogram 1/lambda, p=0.9
-```{r}
-hist(BootstrapMean$One.over.lambdaP09, br=20, xlim=c(200,800), xlab=expression(paste("1/",lambda) ), main=expression(paste("Histogram of 1/",lambda, " when p=0.9")))
-```
-# Strehler-Mildvan correlation in using bootstrap results
-```{r}
-# BootstrapMean
-summary(lm(log10(BootstrapMean$GompRFlex) ~ BootstrapMean$GompGFlex))
-summary(lm(log10(BootstrapMean$R) ~ BootstrapMean$GompGFlex))
-summary(lm(log10(BootstrapMean$R) ~ BootstrapMean$G)) #G from t0 and n 
-summary(lm(log10(BootstrapMean$GompGFlex) ~ BootstrapMean$t0)) #G from t0 and n 
-summary(lm(log10(BootstrapMean$R) ~ BootstrapMean$n)) #G from t0 and n 
-```
-
-# Does t0 mediate GFlex ~ log(RFlex)? Yes. 
-```{r}
-summary(lm( BootstrapMean$GompGFlex ~ BootstrapMean$t0 ))
-summary(lm(log10(BootstrapMean$GompRFlex) ~ BootstrapMean$t0 ))
-summary(lm(log10(BootstrapMean$GompRFlex) ~ BootstrapMean$GompGFlex ))
-
-summary(lm(log10(BootstrapMean$GompGFlex) ~ BootstrapMean$t0 + log10(BootstrapMean$GompRFlex)))
-summary(lm(log10(BootstrapMean$GompRFlex) ~ BootstrapMean$t0 + log10(BootstrapMean$GompGFlex))) #not significant. 
-```
-
-# Why std of avgLS is so large of bootstrap ? This may indicate bootstrap or averaging process have bugs! 
-
-
-
 

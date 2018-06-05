@@ -3,8 +3,8 @@ title: "Single fit and overlay"
 author: "h qin"
 date: "June 9, July 6-11, 2017"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 20171002 Add AIC 
@@ -370,21 +370,5 @@ plot( report$DeltaGompWeiLLH ~ report$CV )
 m3 = lm( report$DeltaGompWeiLLH ~ report$CV)
 abline(m3, col='red')
 ```
-
-
-TODO: Calculate the white noises (fitting errors) using the fitting residues for Gompertz and Weibull models. 
-
-```{r}
-# report$residues ?? 
-
-```
-
-Output
-```{r}
-#write.csv(report2, file = 'sandbox/_report_qinlab_natural_isolates_rls.csv', row.names = FALSE)
-
-```
-
-
 
 
