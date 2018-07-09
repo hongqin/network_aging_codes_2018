@@ -1,0 +1,150 @@
+---
+title: "Mediation test on natural isolates. short version"
+author: "h qin"
+date: "July 9, 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r init}
+rm(list=ls())
+set.seed(20170101)
+library('flexsurv')
+source("../lifespan.r")
+```
+
+# Load boostrapped fitting results
+
+```{r load}
+report = read.csv("sandbox/Bootstrap_summary.csv")
+report = report[, c("strains", "R", "n", "t0","GompRFlex", "GompGFlex")]
+```
+
+
+# Strehler-Mildvan correlation in natural isolates
+```{r SM-plot}
+pdf("strehler-mildvan.pdf", width=5.2, height=5.2)
+plot( log10(report$GompRFlex) ~ report$GompGFlex, pch=19, col='red', xlab='G', ylab='log10(R)', 
+      xlim=c(0.06, 0.17), ylim=c(-3.5, -2.0),
+      main="Strehler-Mildvan correlation in yeast wild isolates")
+m = lm(log10(report$GompRFlex) ~ report$GompGFlex)
+summary(m)
+abline (m, col='red', lty=2);
+text(0.08, -3.3, expression(paste(R^2, "=0.44, p=0.007", sep="")) )
+
+my.x = report$GompGFlex +0.0013 ; my.y = log10(report$GompRFlex) ; 
+names(my.x) = report$my.strains; names(my.y) = report$my.strains; 
+text(my.x,my.y, report$strains, adj=c(0,0) )
+dev.off()
+```
+
+
+# plot log10(GompRFlex) ~ t0
+
+```{r log10R-t0-plot}
+pdf("log10R-t10.pdf", width=5.2, height=5.2)
+
+m = lm(  log10(report$GompRFlex) ~ report$t0  )
+summary(m)
+
+plot( log10(report$GompRFlex) ~ report$t0, col='red',  pch=19, xlab='t0', ylab='log10(R)', ylim=c(-3.5,-2), xlim=c(30,77))
+my.x = report$t0 ; my.y = log10(report$GompRFlex) + 0.04; 
+names(my.x) = report$strains; names(my.y) = report$strains; 
+my.y[c("M34","M1-2", "S288c" )]=c(-2.95, -2.7, -2.3)
+text(my.x,my.y, report$strains, adj=c(0,0) ); 
+abline (m, col='red', lty=2);
+text( 65, -3.3, expression(paste(R^2, "=0.38, p=0.014", sep="")) )
+dev.off()
+```
+
+
+# Could t0 be the cause of logR-G correlation? 
+Partial regression on G ~  log(R)  + t0. 
+
+```{r}
+summary(lm( report$GompGFlex ~ report$t0 + log10(report$GompRFlex)   )) #good
+#summary(lm( log10(report$GompRFlex) ~ report$t0 + report$GompGFlex   )) #poor
+```
+
+#Sobel test on t0
+
+```{r}
+require(multilevel)
+sobel( log10(report$GompRFlex), report$t0, report$GompGFlex )
+
+require(bda)
+mediation.test( report$t0, log10(report$GompRFlex),  report$GompGFlex)
+```
+
+# How about n? 
+
+Partial regression on G ~  log(R)  + n. 
+
+```{r}
+# summary(lm( log10(report$GompRFlex) ~ report$t0 + report$GompGFlex  )) #poor
+# summary(lm( log10(report$GompGFlex) ~ report$t0 + report$GompRFlex  ))#good
+#summary(lm( report$G ~ log10(report$R) + report$t0  ))
+#summary(lm( report$G ~ report$t0 + log10(report$R)   ))
+#summary(lm( report$GompGFlex ~ report$t0 + log10(report$R)   )) 
+summary(lm( report$GompGFlex ~ report$n + log10(report$GompRFlex)   )) 
+summary(lm( log10(report$GompRFlex) ~ report$n + report$GompGFlex   )) 
+```
+
+Sobel test on n. Negative results. 
+
+```{r}
+require(multilevel)
+sobel( log10(report$GompRFlex), report$n, report$GompGFlex )
+
+require(bda)
+mediation.test( report$n, log10(report$GompRFlex),  report$GompGFlex)
+```
+
+# Simple example for sobel test
+```{r}
+x1 = rnorm(100)
+m1 = -x1*0.5 + rnorm(100)*0.05
+y1 = m1 + rnorm(100)*0.05
+mediation.test( m1, x1, y1)
+sobel(x1, m1, y1)
+
+x2 = rnorm(100)
+m2 = -x2*0.1 + rnorm(100)*0.05
+y2 = m2 + rnorm(100)*0.05
+mediation.test( m2, x2, y2)
+sobel(x2, m2, y2)
+
+```
+
+```{r}
+library(mediation)
+set.seed(20170801)
+report$log10GompRFlex = log10(report$GompRFlex)
+med.fit = lm(t0 ~ log10GompRFlex, data=report)  
+summary(med.fit)
+out.fit = lm(GompGFlex ~ t0 + log10GompRFlex, data=report)  
+summary(out.fit)
+med.out <- mediate(med.fit, out.fit, treat = "log10GompRFlex", mediator = "t0", robustSE = TRUE, sims = 100)
+summary(med.out)
+
+```
+
+# Mediation test 2 on Rflex <--t0 <-- GFlex
+#Hong thinks this is negative result, which means t0 works only in one direction. 
+
+```{r}
+med.fit = lm(t0 ~ GompGFlex, data=report)  
+summary(med.fit)
+out.fit = lm(log10GompRFlex ~ t0 + GompGFlex, data=report)  
+summary(out.fit)
+med.out <- mediate(med.fit, out.fit, treat = "GompGFlex", mediator = "t0", robustSE = TRUE, sims = 100)
+summary(med.out)
+
+
+```
+
+
+#overlay binomial aging model cuvrve with RLS data
+
