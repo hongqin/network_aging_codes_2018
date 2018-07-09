@@ -167,48 +167,12 @@ for( i in 1:length(my.strains)){
 
 }
  
-
-
-
-
-
-
 ```
 
 #show the report
 ```{r}
 report
 ```
-
-Calculate lambda based on t0 = (1-p)/(p Lambda)
-So, 1/lambda = t0 * p / (1-p)
-
-```{r}
-p = 0.7
-report$One.over.lambdaP07 = report$t0 * p/ (1-p)
-report[, c("t0", "One.over.lambdaP07")]
-summary( report[, c("t0", "One.over.lambdaP07")])
-
-```
-
-Histogram of 1/lambda for p=0.7
-```{r}
-hist(report$One.over.lambdaP07, br=20, xlim=c(60,190), xlab=expression(paste("1/",lambda) ), main=expression(paste("Histogram of 1/",lambda, " when p=0.7")))
-```
-
-```{r}
-p = 0.9
-report$One.over.lambdaP09 = report$t0 * p/ (1-p)
-report[, c("t0", "One.over.lambdaP09")]
-summary( report[, c("t0", "One.over.lambdaP09")] )
-```
-
-Histogram 1/lambda, p=0.9
-```{r}
-hist(report$One.over.lambdaP09, br=20, xlim=c(200,800), xlab=expression(paste("1/",lambda) ), main=expression(paste("Histogram of 1/",lambda, " when p=0.9")))
-```
-
-
 
 
 # Explorative analysis 
@@ -253,7 +217,7 @@ summary(lm(log10(report2$GompRFlex) ~ report2$GompGFlex)) #G from t0 and n
 # plot log10(R) ~ t0
 
 ```{r}
-plot( log10(report2$R) ~ report2$t0, col='red',  pch=19, xlab='t0', ylab='log10(RFlex)', ylim=c(-3,-2))
+plot( log10(report2$R) ~ report2$t0, col='red',  pch=19, xlab='t0', ylab='log10(R)', ylim=c(-3,-2))
 my.x = report2$t0; my.y = log10(report2$R) + 0.04; 
 names(my.x) = report2$my.strains; names(my.y) = report2$my.strains; 
 my.y[c("M32","YPS163", "YPS128", "M1-2" )]=c(-2.75, -2.8, -2.75, -2.63)
