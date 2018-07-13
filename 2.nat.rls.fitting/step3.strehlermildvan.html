@@ -421,7 +421,8 @@ dev.off()</code></pre>
 <pre><code>## Loading required package: multilevel</code></pre>
 <pre><code>## Loading required package: nlme</code></pre>
 <pre><code>## Loading required package: MASS</code></pre>
-<pre class="r"><code>sobel( log10(report$GompRFlex), report$t0, report$GompGFlex )</code></pre>
+<pre class="r"><code>          #predictor                  mediator      output
+sobel( log10(report$GompRFlex), report$t0, report$GompGFlex )</code></pre>
 <pre><code>## $`Mod1: Y~X`
 ##                Estimate Std. Error    t value    Pr(&gt;|t|)
 ## (Intercept) -0.02291927 0.04470459 -0.5126827 0.616773031
@@ -612,15 +613,19 @@ mediation.test( m2, x2, y2)</code></pre>
 ## 
 ## $N
 ## [1] 100</code></pre>
+</section>
+<section id="mediation-test-on-gflex-t0-rflex" class="level1">
+<h1>Mediation test on Gflex &lt;–t0 &lt;– RFlex</h1>
 <pre class="r"><code>library(mediation)</code></pre>
 <pre><code>## Loading required package: Matrix</code></pre>
 <pre><code>## Loading required package: mvtnorm</code></pre>
 <pre><code>## Loading required package: sandwich</code></pre>
 <pre><code>## mediation: Causal Mediation Analysis
 ## Version: 4.4.6</code></pre>
-<pre class="r"><code>set.seed(20170801)
+<pre class="r"><code>#set.seed(20170801)
 report$log10GompRFlex = log10(report$GompRFlex)
-med.fit = lm(t0 ~ log10GompRFlex, data=report)  
+
+med.fit = lm(t0 ~ log10GompRFlex, data=report)  #mediator ~ treatment
 summary(med.fit)</code></pre>
 <pre><code>## 
 ## Call:
@@ -640,7 +645,7 @@ summary(med.fit)</code></pre>
 ## Residual standard error: 9.873 on 13 degrees of freedom
 ## Multiple R-squared:  0.3843, Adjusted R-squared:  0.337 
 ## F-statistic: 8.115 on 1 and 13 DF,  p-value: 0.01369</code></pre>
-<pre class="r"><code>out.fit = lm(GompGFlex ~ t0 + log10GompRFlex, data=report)  
+<pre class="r"><code>out.fit = lm(GompGFlex ~ t0 + log10GompRFlex, data=report)  #outcome ~ mediator + treatment
 summary(out.fit)</code></pre>
 <pre><code>## 
 ## Call:
@@ -661,7 +666,7 @@ summary(out.fit)</code></pre>
 ## Residual standard error: 0.007237 on 12 degrees of freedom
 ## Multiple R-squared:  0.943,  Adjusted R-squared:  0.9335 
 ## F-statistic: 99.27 on 2 and 12 DF,  p-value: 3.428e-08</code></pre>
-<pre class="r"><code>med.out &lt;- mediate(med.fit, out.fit, treat = &quot;log10GompRFlex&quot;, mediator = &quot;t0&quot;, robustSE = TRUE, sims = 100)
+<pre class="r"><code>med.out &lt;- mediate(med.fit, out.fit, treat = &quot;log10GompRFlex&quot;, mediator = &quot;t0&quot;, robustSE = TRUE, sims = 100) #mediator test
 summary(med.out)</code></pre>
 <pre><code>## 
 ## Causal Mediation Analysis 
@@ -669,10 +674,10 @@ summary(med.out)</code></pre>
 ## Quasi-Bayesian Confidence Intervals
 ## 
 ##                Estimate 95% CI Lower 95% CI Upper p-value    
-## ACME           -0.04753     -0.08316        -0.02  &lt;2e-16 ***
-## ADE            -0.00534     -0.02563         0.02    0.56    
-## Total Effect   -0.05287     -0.08308        -0.02  &lt;2e-16 ***
-## Prop. Mediated  0.90924      0.51087         1.35  &lt;2e-16 ***
+## ACME           -0.04666     -0.07774        -0.02  &lt;2e-16 ***
+## ADE            -0.00782     -0.02636         0.01    0.44    
+## Total Effect   -0.05448     -0.08406        -0.03  &lt;2e-16 ***
+## Prop. Mediated  0.86378      0.49056         1.31  &lt;2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
@@ -731,10 +736,10 @@ summary(med.out)</code></pre>
 ## Quasi-Bayesian Confidence Intervals
 ## 
 ##                Estimate 95% CI Lower 95% CI Upper p-value  
-## ACME              2.979      -17.839        27.67    1.00  
-## ADE             -11.249      -42.486        12.94    0.46  
-## Total Effect     -8.270      -17.837        -1.71    0.04 *
-## Prop. Mediated   -0.268       -8.451         3.49    0.96  
+## ACME              1.927      -18.173        21.17    0.90  
+## ADE              -9.646      -35.615        14.38    0.48  
+## Total Effect     -7.719      -14.749        -0.78    0.04 *
+## Prop. Mediated   -0.195       -3.745         7.96    0.86  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
