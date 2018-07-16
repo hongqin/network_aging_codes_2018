@@ -70,8 +70,8 @@ ggplot(report, aes(x=t0, y = GompRFlex))  +
   geom_point(aes(size=G)) +
   labs( x = "t0", y="R") + 
   scale_y_continuous(trans='log10', limits = c(1E-4, 1E-2), breaks=c( 0.0001, 0.001, 0.005, 0.01),labels=c(0.0001, 0.001, 0.005, 0.01)) +
-  geom_smooth(method = 'lm', se=FALSE, formula = y ~ x, linetype = 3, colour='red') 
-#+ # annotate("text", x = 0.1, y = 2E-4, label = paste("~R^2==~",0.44,"~p==~", 0.007), parse=TRUE )
+  geom_smooth(method = 'lm', se=FALSE, formula = y ~ x, linetype = 3, colour='red') + 
+ annotate("text", x = 60, y = 2E-4, label = paste("~R^2==~",0.38,"~p==~", 0.014), parse=TRUE )
 
 ggsave( "plots/log10R-t10.pdf", device="pdf", width=5, height=3)
 ggsave( "plots/log10R-t10.jpg", device="jpeg", width=5, height=3)
@@ -155,7 +155,6 @@ sobel(x2, m2, y2)
 
 ```{r}
 library(mediation)
-#set.seed(20170801)
 report$log10GompRFlex = log10(report$GompRFlex)
 
 med.fit = lm(t0 ~ log10GompRFlex, data=report)  #mediator ~ treatment
@@ -179,8 +178,41 @@ out.fit = lm(log10GompRFlex ~ t0 + GompGFlex, data=report)
 summary(out.fit)
 med.out <- mediate(med.fit, out.fit, treat = "GompGFlex", mediator = "t0", robustSE = TRUE, sims = 100)
 summary(med.out)
+```
 
+
+
+# Mediation test on Gflex <--n <-- RFlex
+```{r}
+library(mediation)
+report$log10GompRFlex = log10(report$GompRFlex)
+
+med.fit = lm(n ~ log10GompRFlex, data=report)  #mediator ~ treatment
+summary(med.fit)
+
+out.fit = lm(GompGFlex ~ n + log10GompRFlex, data=report)  #outcome ~ mediator + treatment
+summary(out.fit)
+
+med.out <- mediate(med.fit, out.fit, treat = "log10GompRFlex", mediator = "n", robustSE = TRUE, sims = 100) #mediator test
+summary(med.out)
 
 ```
 
+
+
+# Mediation test on Rflex <--n <-- GFlex
+```{r}
+library(mediation)
+report$log10GompRFlex = log10(report$GompRFlex)
+
+med.fit = lm(n ~ GompGFlex, data=report)  #mediator ~ treatment
+summary(med.fit)
+
+out.fit = lm(log10GompRFlex ~ n + GompGFlex, data=report)  #outcome ~ mediator + treatment
+summary(out.fit)
+
+med.out <- mediate(med.fit, out.fit, treat = "GompGFlex", mediator = "n", robustSE = TRUE, sims = 100) #mediator test
+summary(med.out)
+
+```
 
