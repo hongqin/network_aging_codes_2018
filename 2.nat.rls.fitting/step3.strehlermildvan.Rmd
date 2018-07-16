@@ -26,23 +26,26 @@ report = report[, c("strains", "R", "n", "t0","GompRFlex", "GompGFlex")]
 
 # Strehler-Mildvan correlation in natural isolates
 ```{r SM-plot-ggplot}
+m = lm(log10(report$GompRFlex) ~ report$GompGFlex)
+sm = summary(m)
+#my.p = as.numeric(round(1 - pf( sm$fstatistic[1], df1=sm$fstatistic[2], df2=sm$fstatistic[3]), 4))
+
 ggplot(report, aes(x=GompGFlex, y = GompRFlex))  + 
   geom_point(aes(size=t0)) +
   labs( x = "G", y="R") + 
   scale_y_continuous(trans='log10', limits = c(1E-4, 1E-2), breaks=c( 0.0001, 0.001, 0.005, 0.01),labels=c(0.0001, 0.001, 0.005, 0.01)) +
-  geom_smooth(method = 'lm', se=FALSE, formula = y ~ x, linetype = 3, colour='red')
-#  geom_text(label_both("G", "R"))
+  geom_smooth(method = 'lm', se=FALSE, formula = y ~ x, linetype = 3, colour='red') + 
+  annotate("text", x = 0.1, y = 2E-4, label = paste("~R^2==~",0.44,"~p==~", 0.007), parse=TRUE )
 
+ggsave( "strehler-mildvan.pdf", device="pdf", width=5, height=3)
 ```
 
 
 ```{r SM-plot}
-#pdf("strehler-mildvan.pdf", width=5.2, height=5.2)
+#pdf("strehler-mildvan_backup.pdf", width=5.2, height=5.2)
 plot( log10(report$GompRFlex) ~ report$GompGFlex, pch=19, col='red', xlab='G', ylab='log10(R)', 
       xlim=c(0.06, 0.17), ylim=c(-3.5, -2.0),
       main="Strehler-Mildvan correlation in yeast wild isolates")
-m = lm(log10(report$GompRFlex) ~ report$GompGFlex)
-summary(m)
 abline (m, col='red', lty=2);
 text(0.08, -3.3, expression(paste(R^2, "=0.44, p=0.007", sep="")) )
 
