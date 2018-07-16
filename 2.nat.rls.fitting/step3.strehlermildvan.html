@@ -381,7 +381,11 @@ sm = summary(m); sm</code></pre>
 ## Residual standard error: 0.2898 on 13 degrees of freedom
 ## Multiple R-squared:  0.3843, Adjusted R-squared:  0.337 
 ## F-statistic: 8.115 on 1 and 13 DF,  p-value: 0.01369</code></pre>
-<pre class="r"><code>report$G = report$GompGFlex #rename column for plotting
+<pre class="r"><code>report &lt;- report %&gt;% as_tibble %&gt;% mutate(
+  G = GompGFlex
+)
+
+#report$G = report$GompGFlex #rename column for plotting
 
 ggplot(report, aes(x=t0, y = GompRFlex))  + 
   geom_point(aes(size=G)) +
@@ -769,8 +773,8 @@ summary(med.out)</code></pre>
 ## 
 ## Simulations: 100</code></pre>
 </section>
-<section id="mediation-test-on-gflex-n-rflex" class="level1">
-<h1>Mediation test on Gflex &lt;–n &lt;– RFlex</h1>
+<section id="mediation-test-on-gflex-n-rflex-non-significant" class="level1">
+<h1>Mediation test on Gflex &lt;–n &lt;– RFlex (non significant)</h1>
 <pre class="r"><code>library(mediation)
 report$log10GompRFlex = log10(report$GompRFlex)
 
@@ -835,8 +839,8 @@ summary(med.out)</code></pre>
 ## 
 ## Simulations: 100</code></pre>
 </section>
-<section id="mediation-test-on-rflex-n-gflex" class="level1">
-<h1>Mediation test on Rflex &lt;–n &lt;– GFlex</h1>
+<section id="mediation-test-on-rflex-n-gflex-non-signifcant-ng" class="level1">
+<h1>Mediation test on Rflex &lt;–n &lt;– GFlex (non-signifcant: n~G)</h1>
 <pre class="r"><code>library(mediation)
 report$log10GompRFlex = log10(report$GompRFlex)
 

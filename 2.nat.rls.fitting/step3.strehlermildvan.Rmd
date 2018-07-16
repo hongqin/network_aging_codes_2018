@@ -64,7 +64,9 @@ text(my.x,my.y, report$strains, adj=c(0,0) )
 m = lm(  log10(report$GompRFlex) ~ report$t0  )
 sm = summary(m); sm
 
-report$G = report$GompGFlex #rename column for plotting
+report <- report %>% as_tibble %>% mutate( 
+  G = GompGFlex  #rename columns for easy plot
+)
 
 ggplot(report, aes(x=t0, y = GompRFlex))  + 
   geom_point(aes(size=G)) +
@@ -182,7 +184,7 @@ summary(med.out)
 
 
 
-# Mediation test on Gflex <--n <-- RFlex
+# Mediation test on Gflex <--n <-- RFlex (non significant)
 ```{r}
 library(mediation)
 report$log10GompRFlex = log10(report$GompRFlex)
@@ -200,7 +202,7 @@ summary(med.out)
 
 
 
-# Mediation test on Rflex <--n <-- GFlex
+# Mediation test on Rflex <--n <-- GFlex (non-signifcant: n~G)
 ```{r}
 library(mediation)
 report$log10GompRFlex = log10(report$GompRFlex)
