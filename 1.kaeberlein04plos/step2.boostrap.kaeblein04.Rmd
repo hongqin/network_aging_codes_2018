@@ -41,7 +41,7 @@ names(tb) = my.strains
 
 # Now, fit all RLS data 
 
-```{r, message=FALSE }
+```{r fit_all, message=FALSE }
 for( BootstrapCount in 1:RUNS ) {#!!!!!!
 
 report = data.frame(my.strains)
@@ -103,7 +103,7 @@ write.csv(report, file = outname, row.names = FALSE);
 #summarize boostrap results. 
 Pick row-col value from every file into a buffer, then mean and stddev. 
 
-```{r}
+```{r summariz}
 BootstrapMean = report; 
 BootstrapStd = report;
 rownames = names(report);
@@ -141,46 +141,59 @@ BootstrapStd
 ```
 
 Merge the two tables
-```{r}
+```{r merging}
 BootstrapMean$Rstd = BootstrapStd$R
 BootstrapMean$t0std = BootstrapStd$t0
 BootstrapMean$nstd = BootstrapStd$n
-BootstrapMean$Gstd = BootstrapStd$G
+#BootstrapMean$Gstd = BootstrapStd$G
 BootstrapMean$avgLSstd = BootstrapStd$avgLS
-BootstrapMean$GompRFlexStd = BootstrapStd$GompRFlex
-BootstrapMean$GompGFlexStd = BootstrapStd$GompGFlex
+BootstrapMean$GompRFlexstd = BootstrapStd$GompRFlex
+BootstrapMean$GompGFlexstd = BootstrapStd$GompGFlex
+BootstrapMean$GompAICFlexstd = BootstrapStd$GompAICFlex
+BootstrapMean$WeibAICFlexstd = BootstrapStd$WeibAICFlex
+BootstrapMean$BinomialAICstd = BootstrapStd$BinomialAIC
+
+BootstrapMean$avgLSstd = BootstrapStd$avgLS
 names(BootstrapMean)
 ```
 
 
 Reorganized the columns
 ```{r}
-BootstrapMean = BootstrapMean[, c( "my.strains",  "samplesize",  "R", "Rstd",  "t0",  "t0std",  "n",  "nstd",   "G",  
-                                   "Gstd", "avgLS",  "avgLSstd", "stdLS",   "BestModel",  "CV",  
-                                    "GompRFlex", "GompRFlexStd", "GompGFlex",  "GompGFlexStd",
-                                   "GompLogLikFlex",   "WeibShapeFlex",  "WeibRateFlex", 
-                                   "WeibLogLikFlex",  "WeibAICFlex", "GompAICFlex", "BinomialAIC" 
-                                   )];
+#BootstrapMean = BootstrapMean[, c( "my.strains",  "samplesize",  "R", "Rstd",  "t0",  "t0std",  "n",  #"nstd",   "G",  
+#                                   "Gstd", "avgLS",  "avgLSstd", "stdLS",   "BestModel",  "CV",  
+#                                    "GompRFlex", "GompRFlexStd", "GompGFlex",  "GompGFlexStd",
+#                                   "GompLogLikFlex",   "WeibShapeFlex",  "WeibRateFlex", 
+#                                   "WeibLogLikFlex",  "WeibAICFlex", "GompAICFlex", "BinomialAIC" 
+#                                   )];
+
+BootstrapMean = BootstrapMean[, c( "my.strains", "avgLS", "avgLSstd" , 
+                                   "R", "Rstd",  "t0",  "t0std",  "n",  "nstd", "GompRFlex", "GompRFlexstd", "GompGFlex", "GompGFlexstd", "WeibAICFlex", "WeibAICFlexstd", "GompAICFlex",  "GompAICFlexstd", "BinomialAIC", "BinomialAICstd" 
+ )];
+
 BootstrapMean
 ```
 
 Merge mean and std for publication
 ```{r}
 BootstrapMeanPublishing = data.frame( BootstrapMean[, c("my.strains")] )
+BootstrapMeanPublishing$avgLSwithStd = as.vector( paste(round(BootstrapMean$avgLS, 2), round(BootstrapMean$avgLSstd,3), sep=" +/- ") );
 BootstrapMeanPublishing$RwithStd = as.vector( paste(round(BootstrapMean$R, 4), round(BootstrapMean$Rstd,4), sep=" +/- ") );
 BootstrapMeanPublishing$t0withStd = as.vector( paste(round(BootstrapMean$t0, 1), round(BootstrapMean$t0std,1), sep=" +/- ") );
 BootstrapMeanPublishing$nwithStd = as.vector( paste(round(BootstrapMean$n, 1), round(BootstrapMean$nstd,3), sep=" +/- ") );
-BootstrapMeanPublishing$GwithStd = as.vector( paste(round(BootstrapMean$G, 2), round(BootstrapMean$Gstd,3), sep=" +/- ") );
-BootstrapMeanPublishing$GompRFlexwithStd = as.vector( paste(round(BootstrapMean$GompRFlex, 3), round(BootstrapMean$GompRFlexStd,3), sep=" +/- ") );
-BootstrapMeanPublishing$GompGFlexwithStd = as.vector( paste(round(BootstrapMean$GompGFlex, 2), round(BootstrapMean$GompGFlexStd,3), sep=" +/- ") );
+#BootstrapMeanPublishing$GwithStd = as.vector( paste(round(BootstrapMean$G, 2), round(BootstrapMean$Gstd,3), sep=" +/- ") );
 
-BootstrapMeanPublishing$avgLSwithStd = as.vector( paste(round(BootstrapMean$avgLS, 2), round(BootstrapMean$avgLSstd,3), sep=" +/- ") );
+BootstrapMeanPublishing$GompR = as.vector( paste(round(BootstrapMean$GompRFlex, 4), round(BootstrapMean$GompRFlexstd,5), sep=" +/- ") );
+BootstrapMeanPublishing$GompG = as.vector( paste(round(BootstrapMean$GompGFlex, 2), round(BootstrapMean$GompGFlexstd,3), sep=" +/- ") );
+BootstrapMeanPublishing$WeibAIC = as.vector( paste(round(BootstrapMean$WeibAICFlex, 2), round(BootstrapMean$WeibAICFlexstd,2), sep=" +/- ") );
+BootstrapMeanPublishing$GompAIC = as.vector( paste(round(BootstrapMean$GompAICFlex, 2), round(BootstrapMean$GompAICFlexstd,2), sep=" +/- ") );
+BootstrapMeanPublishing$BinomialAIC = as.vector( paste(round(BootstrapMean$BinomialAIC, 2), round(BootstrapMean$BinomialAICstd,2), sep=" +/- ") );
 
 BootstrapMeanPublishing
 ```
 
 output
-```{r}
+```{r output}
 write.csv(BootstrapMean, file='sandbox/_Kaberlein04_Bootstrap_summary.csv', row.names = FALSE)
 write.csv(BootstrapMeanPublishing, file='sandbox/_Kaberlein04_Bootstrap_summary_Publications.csv', row.names = FALSE)
 

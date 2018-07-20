@@ -305,7 +305,7 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">Bootstrap and fit mutants RLS with binomial aging model</h1>
 <h4 class="author"><em>H Qin</em></h4>
-<h4 class="date"><em>05 June, 2018</em></h4>
+<h4 class="date"><em>20 July, 2018</em></h4>
 
 </div>
 
@@ -319,19 +319,19 @@ set.seed(20170701) #for repeatability
 RUNS = 100; #bootstrap runs
 
 list.files()</code></pre>
-<pre><code>##  [1] &quot;0.fit.kaeberlein04.pdf&quot;           
-##  [2] &quot;bootstrap&quot;                        
-##  [3] &quot;kae04_plots.pdf&quot;                  
-##  [4] &quot;kaeberlein04_selected_strains.csv&quot;
-##  [5] &quot;lifespan.20160926.r&quot;              
-##  [6] &quot;lifespan.r&quot;                       
-##  [7] &quot;old&quot;                              
-##  [8] &quot;plots&quot;                            
-##  [9] &quot;sandbox&quot;                          
-## [10] &quot;step1.fit.kaeberlein04.html&quot;      
-## [11] &quot;step1.fit.kaeberlein04.Rmd&quot;       
-## [12] &quot;step2.boostrap.kaeblein04.html&quot;   
-## [13] &quot;step2.boostrap.kaeblein04.Rmd&quot;</code></pre>
+<pre><code>##  [1] &quot;bootstrap&quot;                        
+##  [2] &quot;kae04_plots.pdf&quot;                  
+##  [3] &quot;kaeberlein04_selected_strains.csv&quot;
+##  [4] &quot;lifespan.20160926.r&quot;              
+##  [5] &quot;lifespan.r&quot;                       
+##  [6] &quot;old&quot;                              
+##  [7] &quot;sandbox&quot;                          
+##  [8] &quot;step1.fit.kaeberlein04.html&quot;      
+##  [9] &quot;step1.fit.kaeberlein04.Rmd&quot;       
+## [10] &quot;step2.boostrap.kaeblein04.html&quot;   
+## [11] &quot;step2.boostrap.kaeblein04.Rmd&quot;    
+## [12] &quot;step3.quality.check.html&quot;         
+## [13] &quot;step3.quality.check.Rmd&quot;</code></pre>
 <section id="parse-the-strains-from-files" class="level1">
 <h1>parse the strains from files</h1>
 <pre class="r"><code>tb = read.csv(&quot;kaeberlein04_selected_strains.csv&quot;)
@@ -508,94 +508,100 @@ for( col in 2:length(report[1,])) {
 <pre class="r"><code>BootstrapMean$Rstd = BootstrapStd$R
 BootstrapMean$t0std = BootstrapStd$t0
 BootstrapMean$nstd = BootstrapStd$n
-BootstrapMean$Gstd = BootstrapStd$G
+#BootstrapMean$Gstd = BootstrapStd$G
 BootstrapMean$avgLSstd = BootstrapStd$avgLS
-BootstrapMean$GompRFlexStd = BootstrapStd$GompRFlex
-BootstrapMean$GompGFlexStd = BootstrapStd$GompGFlex
+BootstrapMean$GompRFlexstd = BootstrapStd$GompRFlex
+BootstrapMean$GompGFlexstd = BootstrapStd$GompGFlex
+BootstrapMean$GompAICFlexstd = BootstrapStd$GompAICFlex
+BootstrapMean$WeibAICFlexstd = BootstrapStd$WeibAICFlex
+BootstrapMean$BinomialAICstd = BootstrapStd$BinomialAIC
+
+BootstrapMean$avgLSstd = BootstrapStd$avgLS
 names(BootstrapMean)</code></pre>
 <pre><code>##  [1] &quot;my.strains&quot;     &quot;samplesize&quot;     &quot;R&quot;              &quot;t0&quot;            
 ##  [5] &quot;n&quot;              &quot;G&quot;              &quot;avgLS&quot;          &quot;stdLS&quot;         
 ##  [9] &quot;CV&quot;             &quot;GompGFlex&quot;      &quot;GompRFlex&quot;      &quot;GompLogLikFlex&quot;
 ## [13] &quot;GompAICFlex&quot;    &quot;WeibShapeFlex&quot;  &quot;WeibRateFlex&quot;   &quot;WeibLogLikFlex&quot;
 ## [17] &quot;WeibAICFlex&quot;    &quot;BinomialAIC&quot;    &quot;BestModel&quot;      &quot;Rstd&quot;          
-## [21] &quot;t0std&quot;          &quot;nstd&quot;           &quot;Gstd&quot;           &quot;avgLSstd&quot;      
-## [25] &quot;GompRFlexStd&quot;   &quot;GompGFlexStd&quot;</code></pre>
+## [21] &quot;t0std&quot;          &quot;nstd&quot;           &quot;avgLSstd&quot;       &quot;GompRFlexstd&quot;  
+## [25] &quot;GompGFlexstd&quot;   &quot;GompAICFlexstd&quot; &quot;WeibAICFlexstd&quot; &quot;BinomialAICstd&quot;</code></pre>
 <p>Reorganized the columns</p>
-<pre class="r"><code>BootstrapMean = BootstrapMean[, c( &quot;my.strains&quot;,  &quot;samplesize&quot;,  &quot;R&quot;, &quot;Rstd&quot;,  &quot;t0&quot;,  &quot;t0std&quot;,  &quot;n&quot;,  &quot;nstd&quot;,   &quot;G&quot;,  
-                                   &quot;Gstd&quot;, &quot;avgLS&quot;,  &quot;avgLSstd&quot;, &quot;stdLS&quot;,   &quot;BestModel&quot;,  &quot;CV&quot;,  
-                                    &quot;GompRFlex&quot;, &quot;GompRFlexStd&quot;, &quot;GompGFlex&quot;,  &quot;GompGFlexStd&quot;,
-                                   &quot;GompLogLikFlex&quot;,   &quot;WeibShapeFlex&quot;,  &quot;WeibRateFlex&quot;, 
-                                   &quot;WeibLogLikFlex&quot;,  &quot;WeibAICFlex&quot;, &quot;GompAICFlex&quot;, &quot;BinomialAIC&quot; 
-                                   )];
+<pre class="r"><code>#BootstrapMean = BootstrapMean[, c( &quot;my.strains&quot;,  &quot;samplesize&quot;,  &quot;R&quot;, &quot;Rstd&quot;,  &quot;t0&quot;,  &quot;t0std&quot;,  &quot;n&quot;,  #&quot;nstd&quot;,   &quot;G&quot;,  
+#                                   &quot;Gstd&quot;, &quot;avgLS&quot;,  &quot;avgLSstd&quot;, &quot;stdLS&quot;,   &quot;BestModel&quot;,  &quot;CV&quot;,  
+#                                    &quot;GompRFlex&quot;, &quot;GompRFlexStd&quot;, &quot;GompGFlex&quot;,  &quot;GompGFlexStd&quot;,
+#                                   &quot;GompLogLikFlex&quot;,   &quot;WeibShapeFlex&quot;,  &quot;WeibRateFlex&quot;, 
+#                                   &quot;WeibLogLikFlex&quot;,  &quot;WeibAICFlex&quot;, &quot;GompAICFlex&quot;, &quot;BinomialAIC&quot; 
+#                                   )];
+
+BootstrapMean = BootstrapMean[, c( &quot;my.strains&quot;, &quot;avgLS&quot;, &quot;avgLSstd&quot; , 
+                                   &quot;R&quot;, &quot;Rstd&quot;,  &quot;t0&quot;,  &quot;t0std&quot;,  &quot;n&quot;,  &quot;nstd&quot;, &quot;GompRFlex&quot;, &quot;GompRFlexstd&quot;, &quot;GompGFlex&quot;, &quot;GompGFlexstd&quot;, &quot;WeibAICFlex&quot;, &quot;WeibAICFlexstd&quot;, &quot;GompAICFlex&quot;,  &quot;GompAICFlexstd&quot;, &quot;BinomialAIC&quot;, &quot;BinomialAICstd&quot; 
+ )];
+
 BootstrapMean</code></pre>
-<pre><code>##   my.strains samplesize           R         Rstd        t0     t0std
-## 1     BY4742        250 0.004708628 0.0007733969  56.24180 10.089212
-## 2       sir2         90 0.002756623 0.0004616108  16.64246  1.884138
-## 3    SIR2.ox         60 0.003275756 0.0006959081  65.17513  7.475628
-## 4       fob1        140 0.003248661 0.0006137261  71.42492  5.687067
-## 5       hxk2        120 0.005726745 0.0010394553 101.27443 12.851031
-## 6  fob1.hxk2        160 0.005116934 0.0013206859 118.11540  8.337785
-##          n      nstd          G        Gstd    avgLS  avgLSstd     stdLS
-## 1 7.922145 0.8254120 0.12657929 0.019817150 26.60008 0.5663741  9.442735
-## 2 7.992479 0.2997794 0.42381005 0.033519479 13.96167 0.3373620  3.475737
-## 3 7.827326 0.5135925 0.10568134 0.011311338 34.71917 1.4244978 10.692760
-## 4 7.578751 0.4675306 0.09246536 0.007846272 37.72079 1.1192157 13.345379
-## 5 7.473746 0.6289857 0.06511435 0.010521835 36.77242 1.5963305 16.244985
-## 6 6.489875 0.6710336 0.04692664 0.008160688 48.45856 1.5651023 21.188368
-##                  BestModel        CV   GompRFlex GompRFlexStd  GompGFlex
-## 1                 Weib=100 0.3550238 0.006622143 0.0008777109 0.08563995
-## 2         bin&lt;2=40:Weib=58 0.2492238 0.003522301 0.0012048661 0.28589627
-## 3         bin&lt;2=44:Weib=56 0.3080417 0.003834561 0.0010341047 0.07758876
-## 4  bin&lt;2=54:Gomp=1:Weib=45 0.3541229 0.003454702 0.0006754558 0.07027012
-## 5  bin&lt;2=73:Gomp=2:Weib=25 0.4422122 0.006685539 0.0010866428 0.04882984
-## 6 bin&lt;2=25:Gomp=42:Weib=27 0.4376078 0.004086520 0.0006334812 0.04253431
-##   GompGFlexStd GompLogLikFlex WeibShapeFlex WeibRateFlex WeibLogLikFlex
-## 1  0.006380810       -937.131      3.022195     29.74585       -914.135
-## 2  0.030854697       -244.796      4.496926     15.28160       -239.528
-## 3  0.008937955       -234.357      3.454696     38.59432       -226.861
-## 4  0.005552063       -564.920      3.156355     42.21174       -558.776
-## 5  0.003450914       -506.822      2.418024     41.44239       -501.431
-## 6  0.003051159       -711.956      2.477010     54.57205       -713.300
-##   WeibAICFlex GompAICFlex BinomialAIC
-## 1     1832.25     1878.29   1863.5266
-## 2      483.10      493.59    494.3417
-## 3      457.75      472.71    471.4572
-## 4     1121.55     1133.84   1134.3625
-## 5     1006.87     1017.62   1016.8293
-## 6     1430.63     1427.90   1435.6015</code></pre>
+<pre><code>##   my.strains    avgLS  avgLSstd           R         Rstd        t0
+## 1     BY4742 26.60008 0.5663741 0.004708628 0.0007733969  56.24180
+## 2       sir2 13.96167 0.3373620 0.002756623 0.0004616108  16.64246
+## 3    SIR2.ox 34.71917 1.4244978 0.003275756 0.0006959081  65.17513
+## 4       fob1 37.72079 1.1192157 0.003248661 0.0006137261  71.42492
+## 5       hxk2 36.77242 1.5963305 0.005726745 0.0010394553 101.27443
+## 6  fob1.hxk2 48.45856 1.5651023 0.005116934 0.0013206859 118.11540
+##       t0std        n      nstd   GompRFlex GompRFlexstd  GompGFlex
+## 1 10.089212 7.922145 0.8254120 0.006622143 0.0008777109 0.08563995
+## 2  1.884138 7.992479 0.2997794 0.003522301 0.0012048661 0.28589627
+## 3  7.475628 7.827326 0.5135925 0.003834561 0.0010341047 0.07758876
+## 4  5.687067 7.578751 0.4675306 0.003454702 0.0006754558 0.07027012
+## 5 12.851031 7.473746 0.6289857 0.006685539 0.0010866428 0.04882984
+## 6  8.337785 6.489875 0.6710336 0.004086520 0.0006334812 0.04253431
+##   GompGFlexstd WeibAICFlex WeibAICFlexstd GompAICFlex GompAICFlexstd
+## 1  0.006380810     1832.25       24.30878     1878.29      23.157910
+## 2  0.030854697      483.10       15.46877      493.59      15.529116
+## 3  0.008937955      457.75        8.82647      472.71       9.007623
+## 4  0.005552063     1121.55       13.37975     1133.84      13.545076
+## 5  0.003450914     1006.87       13.50919     1017.62       9.003681
+## 6  0.003051159     1430.63       12.84614     1427.90      11.462279
+##   BinomialAIC BinomialAICstd
+## 1   1863.5266      24.446225
+## 2    494.3417      12.183753
+## 3    471.4572       8.463151
+## 4   1134.3625      12.417836
+## 5   1016.8293      10.468648
+## 6   1435.6015      13.083054</code></pre>
 <p>Merge mean and std for publication</p>
 <pre class="r"><code>BootstrapMeanPublishing = data.frame( BootstrapMean[, c(&quot;my.strains&quot;)] )
+BootstrapMeanPublishing$avgLSwithStd = as.vector( paste(round(BootstrapMean$avgLS, 2), round(BootstrapMean$avgLSstd,3), sep=&quot; +/- &quot;) );
 BootstrapMeanPublishing$RwithStd = as.vector( paste(round(BootstrapMean$R, 4), round(BootstrapMean$Rstd,4), sep=&quot; +/- &quot;) );
 BootstrapMeanPublishing$t0withStd = as.vector( paste(round(BootstrapMean$t0, 1), round(BootstrapMean$t0std,1), sep=&quot; +/- &quot;) );
 BootstrapMeanPublishing$nwithStd = as.vector( paste(round(BootstrapMean$n, 1), round(BootstrapMean$nstd,3), sep=&quot; +/- &quot;) );
-BootstrapMeanPublishing$GwithStd = as.vector( paste(round(BootstrapMean$G, 2), round(BootstrapMean$Gstd,3), sep=&quot; +/- &quot;) );
-BootstrapMeanPublishing$GompRFlexwithStd = as.vector( paste(round(BootstrapMean$GompRFlex, 3), round(BootstrapMean$GompRFlexStd,3), sep=&quot; +/- &quot;) );
-BootstrapMeanPublishing$GompGFlexwithStd = as.vector( paste(round(BootstrapMean$GompGFlex, 2), round(BootstrapMean$GompGFlexStd,3), sep=&quot; +/- &quot;) );
+#BootstrapMeanPublishing$GwithStd = as.vector( paste(round(BootstrapMean$G, 2), round(BootstrapMean$Gstd,3), sep=&quot; +/- &quot;) );
 
-BootstrapMeanPublishing$avgLSwithStd = as.vector( paste(round(BootstrapMean$avgLS, 2), round(BootstrapMean$avgLSstd,3), sep=&quot; +/- &quot;) );
+BootstrapMeanPublishing$GompR = as.vector( paste(round(BootstrapMean$GompRFlex, 4), round(BootstrapMean$GompRFlexstd,5), sep=&quot; +/- &quot;) );
+BootstrapMeanPublishing$GompG = as.vector( paste(round(BootstrapMean$GompGFlex, 2), round(BootstrapMean$GompGFlexstd,3), sep=&quot; +/- &quot;) );
+BootstrapMeanPublishing$WeibAIC = as.vector( paste(round(BootstrapMean$WeibAICFlex, 2), round(BootstrapMean$WeibAICFlexstd,2), sep=&quot; +/- &quot;) );
+BootstrapMeanPublishing$GompAIC = as.vector( paste(round(BootstrapMean$GompAICFlex, 2), round(BootstrapMean$GompAICFlexstd,2), sep=&quot; +/- &quot;) );
+BootstrapMeanPublishing$BinomialAIC = as.vector( paste(round(BootstrapMean$BinomialAIC, 2), round(BootstrapMean$BinomialAICstd,2), sep=&quot; +/- &quot;) );
 
 BootstrapMeanPublishing</code></pre>
-<pre><code>##   BootstrapMean...c..my.strains...          RwithStd      t0withStd
-## 1                           BY4742  0.0047 +/- 8e-04  56.2 +/- 10.1
-## 2                             sir2  0.0028 +/- 5e-04   16.6 +/- 1.9
-## 3                          SIR2.ox  0.0033 +/- 7e-04   65.2 +/- 7.5
-## 4                             fob1  0.0032 +/- 6e-04   71.4 +/- 5.7
-## 5                             hxk2  0.0057 +/- 0.001 101.3 +/- 12.9
-## 6                        fob1.hxk2 0.0051 +/- 0.0013  118.1 +/- 8.3
-##        nwithStd       GwithStd GompRFlexwithStd GompGFlexwithStd
-## 1 7.9 +/- 0.825  0.13 +/- 0.02  0.007 +/- 0.001   0.09 +/- 0.006
-## 2     8 +/- 0.3 0.42 +/- 0.034  0.004 +/- 0.001   0.29 +/- 0.031
-## 3 7.8 +/- 0.514 0.11 +/- 0.011  0.004 +/- 0.001   0.08 +/- 0.009
-## 4 7.6 +/- 0.468 0.09 +/- 0.008  0.003 +/- 0.001   0.07 +/- 0.006
-## 5 7.5 +/- 0.629 0.07 +/- 0.011  0.007 +/- 0.001   0.05 +/- 0.003
-## 6 6.5 +/- 0.671 0.05 +/- 0.008  0.004 +/- 0.001   0.04 +/- 0.003
-##      avgLSwithStd
-## 1  26.6 +/- 0.566
-## 2 13.96 +/- 0.337
-## 3 34.72 +/- 1.424
-## 4 37.72 +/- 1.119
-## 5 36.77 +/- 1.596
-## 6 48.46 +/- 1.565</code></pre>
+<pre><code>##   BootstrapMean...c..my.strains...    avgLSwithStd          RwithStd
+## 1                           BY4742  26.6 +/- 0.566  0.0047 +/- 8e-04
+## 2                             sir2 13.96 +/- 0.337  0.0028 +/- 5e-04
+## 3                          SIR2.ox 34.72 +/- 1.424  0.0033 +/- 7e-04
+## 4                             fob1 37.72 +/- 1.119  0.0032 +/- 6e-04
+## 5                             hxk2 36.77 +/- 1.596  0.0057 +/- 0.001
+## 6                        fob1.hxk2 48.46 +/- 1.565 0.0051 +/- 0.0013
+##        t0withStd      nwithStd              GompR          GompG
+## 1  56.2 +/- 10.1 7.9 +/- 0.825 0.0066 +/- 0.00088 0.09 +/- 0.006
+## 2   16.6 +/- 1.9     8 +/- 0.3  0.0035 +/- 0.0012 0.29 +/- 0.031
+## 3   65.2 +/- 7.5 7.8 +/- 0.514 0.0038 +/- 0.00103 0.08 +/- 0.009
+## 4   71.4 +/- 5.7 7.6 +/- 0.468 0.0035 +/- 0.00068 0.07 +/- 0.006
+## 5 101.3 +/- 12.9 7.5 +/- 0.629 0.0067 +/- 0.00109 0.05 +/- 0.003
+## 6  118.1 +/- 8.3 6.5 +/- 0.671 0.0041 +/- 0.00063 0.04 +/- 0.003
+##             WeibAIC           GompAIC       BinomialAIC
+## 1 1832.25 +/- 24.31 1878.29 +/- 23.16 1863.53 +/- 24.45
+## 2   483.1 +/- 15.47  493.59 +/- 15.53  494.34 +/- 12.18
+## 3   457.75 +/- 8.83   472.71 +/- 9.01   471.46 +/- 8.46
+## 4 1121.55 +/- 13.38 1133.84 +/- 13.55 1134.36 +/- 12.42
+## 5 1006.87 +/- 13.51     1017.62 +/- 9 1016.83 +/- 10.47
+## 6 1430.63 +/- 12.85  1427.9 +/- 11.46  1435.6 +/- 13.08</code></pre>
 <p>output</p>
 <pre class="r"><code>write.csv(BootstrapMean, file='sandbox/_Kaberlein04_Bootstrap_summary.csv', row.names = FALSE)
 write.csv(BootstrapMeanPublishing, file='sandbox/_Kaberlein04_Bootstrap_summary_Publications.csv', row.names = FALSE)</code></pre>

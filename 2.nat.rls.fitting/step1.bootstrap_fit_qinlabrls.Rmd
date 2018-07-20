@@ -1,7 +1,7 @@
 ---
 title: "Fit Qin-lab natural isolates using bootstraps"
 author: "h qin"
-date: "2017 April 24 - June 11"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   html_document: default
   pdf_document: default
@@ -137,7 +137,7 @@ BootstrapStd
 ```
 
 Merge the two tables
-```{r}
+```{r merging}
 BootstrapMean$Rstd = BootstrapStd$R
 BootstrapMean$t0std = BootstrapStd$t0
 BootstrapMean$nstd = BootstrapStd$n
@@ -179,7 +179,7 @@ BootstrapMeanPublishing
 ```
 
 output
-```{r}
+```{r output}
 write.csv(BootstrapMean, file="sandbox/Bootstrap_summary.csv", row.names = FALSE)
 write.csv(BootstrapMeanPublishing, file="sandbox/Bootstrap_summary_for_publication.csv", row.names = FALSE)
 
