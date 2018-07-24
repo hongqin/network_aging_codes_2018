@@ -1,4 +1,3 @@
-# network_aging_ms_draft
-started on May 10, 2018 for bmc systems biology submission. 
+# Codes for Network Aging Manuscript 
 
 Supporting codes and data for Qin 2018 network aging modeling manuscript. 
