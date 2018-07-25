@@ -1,0 +1,45 @@
+---
+title: "Mediation test on natural isolates. short version"
+author: "h qin"
+date: "July 9, 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r init}
+rm(list=ls())
+set.seed(20170101)
+library(ggplot2)
+library(dplyr)
+library('flexsurv')
+source("../lifespan.r")
+```
+
+# Load boostrapped fitting results
+
+```{r load}
+report = read.csv("sandbox/Bootstrap_summary.csv")
+report = report[, c("strains", "R", "n", "t0","GompRFlex", "GompGFlex")]
+```
+
+# Appromixation conditions
+
+Calculate lambda based on t0 = (1-p)/(p Lambda) So, 1/lambda = t0 * p / (1-p)
+
+
+```{r p=0.9 }
+p = 0.9
+report$One.over.lambdaP09 = report$t0 * p/ (1-p)
+report[, c("strains", "t0", "One.over.lambdaP09")]
+mean(report$One.over.lambdaP09)
+```
+
+```{r p=0.7 }
+p = 0.7
+report$One.over.lambdaP07 = report$t0 * p/ (1-p)
+report[, c("strains", "t0", "One.over.lambdaP07")]
+mean(report$One.over.lambdaP07)
+```
+
