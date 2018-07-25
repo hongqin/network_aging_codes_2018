@@ -329,7 +329,24 @@ library(dplyr)</code></pre>
 <section id="load-boostrapped-fitting-results" class="level1">
 <h1>Load boostrapped fitting results</h1>
 <pre class="r"><code>report = read.csv(&quot;sandbox/Bootstrap_summary.csv&quot;)
-report = report[, c(&quot;strains&quot;, &quot;R&quot;, &quot;n&quot;, &quot;t0&quot;,&quot;GompRFlex&quot;, &quot;GompGFlex&quot;)]</code></pre>
+report = report[, c(&quot;strains&quot;, &quot;R&quot;, &quot;n&quot;, &quot;t0&quot;,&quot;GompRFlex&quot;, &quot;GompGFlex&quot;)]
+summary(report)</code></pre>
+<pre><code>##     strains        R                  n               t0       
+##  101S   :1   Min.   :0.001829   Min.   :6.077   Min.   :30.65  
+##  M1-2   :1   1st Qu.:0.002571   1st Qu.:6.517   1st Qu.:36.63  
+##  M13    :1   Median :0.003312   Median :6.874   Median :41.90  
+##  M14    :1   Mean   :0.003285   Mean   :6.998   Mean   :45.39  
+##  M2-8   :1   3rd Qu.:0.003426   3rd Qu.:7.563   3rd Qu.:55.26  
+##  M22    :1   Max.   :0.006520   Max.   :7.999   Max.   :73.99  
+##  (Other):9                                                     
+##    GompRFlex          GompGFlex      
+##  Min.   :0.000359   Min.   :0.06804  
+##  1st Qu.:0.001160   1st Qu.:0.09165  
+##  Median :0.002015   Median :0.12014  
+##  Mean   :0.002631   Mean   :0.11859  
+##  3rd Qu.:0.003524   3rd Qu.:0.13813  
+##  Max.   :0.007707   Max.   :0.16453  
+## </code></pre>
 </section>
 <section id="appromixation-conditions" class="level1">
 <h1>Appromixation conditions</h1>

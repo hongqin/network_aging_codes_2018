@@ -22,6 +22,7 @@ source("../lifespan.r")
 ```{r load}
 report = read.csv("sandbox/Bootstrap_summary.csv")
 report = report[, c("strains", "R", "n", "t0","GompRFlex", "GompGFlex")]
+summary(report)
 ```
 
 # Appromixation conditions
